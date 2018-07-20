@@ -1,13 +1,10 @@
 package vswe.stevescarts;
 
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
-import net.minecraft.client.renderer.entity.Render;
-import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.model.ModelLoader;
-import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.handlers.SoundHandler;
@@ -37,16 +34,9 @@ public class ClientProxy extends CommonProxy {
 		});*/
 	}
 
-	public class RenderManagerCart implements IRenderFactory<EntityMinecartModular> {
-		@Override
-		public Render<? super EntityMinecartModular> createRenderFor(RenderManager manager) {
-			return new RendererCart(manager);
-		}
-	}
-
 	@Override
 	public void preInit() {
-		RenderingRegistry.registerEntityRenderingHandler(EntityMinecartModular.class, new RenderManagerCart()); //Needs to be done after the mc ones have been done
+		RenderingRegistry.registerEntityRenderingHandler(EntityMinecartModular.class, RendererCart::new); //Needs to be done after the mc ones have been done
 		new SoundHandler();
 		new MinecartSoundMuter();
 	}

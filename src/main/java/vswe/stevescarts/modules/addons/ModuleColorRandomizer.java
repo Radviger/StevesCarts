@@ -10,6 +10,7 @@ import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 
+import java.io.DataInput;
 import java.util.Random;
 
 public class ModuleColorRandomizer extends ModuleAddon {
@@ -121,7 +122,7 @@ public class ModuleColorRandomizer extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0) {
 			randomizeColor();
 		}

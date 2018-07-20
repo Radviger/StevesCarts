@@ -17,6 +17,8 @@ import vswe.stevescarts.modules.ModuleBase;
 import vswe.stevescarts.modules.engines.ModuleEngine;
 import vswe.stevescarts.modules.workers.tools.ModuleTool;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class ModuleLabel extends ModuleAddon {
@@ -258,9 +260,9 @@ public class ModuleLabel extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			toggleActive(data[0]);
+			toggleActive(reader.readByte());
 		}
 	}
 

@@ -14,6 +14,9 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ModuleDynamite extends ModuleBase {
 	private boolean markerMoving;
 	private int fuseStartX;
@@ -237,9 +240,9 @@ public class ModuleDynamite extends ModuleBase {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			setFuseLength(data[0]);
+			setFuseLength(reader.readByte());
 		}
 	}
 

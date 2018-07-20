@@ -15,7 +15,7 @@ import vswe.stevescarts.StevesCarts;
 import vswe.stevescarts.blocks.tileentities.TileEntityCartAssembler;
 import vswe.stevescarts.blocks.tileentities.TileEntityUpgrade;
 import vswe.stevescarts.helpers.Pair;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageStevesCarts;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +49,7 @@ public class BlockCartAssembler extends BlockContainerBase {
 		}
 		checkForUpgrades(world, pos);
 		if (!world.isRemote) {
-			PacketStevesCarts.sendBlockInfoToClients(world, new byte[0], pos);
+			MessageStevesCarts.sendBlockInfoToClients(world, o -> o.writeByte(0), pos);
 		}
 		if (master instanceof TileEntityCartAssembler) {
 			((TileEntityCartAssembler) master).onUpgradeUpdate();

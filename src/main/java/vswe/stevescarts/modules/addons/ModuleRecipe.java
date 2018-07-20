@@ -17,6 +17,8 @@ import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 
 import javax.annotation.Nonnull;
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public abstract class ModuleRecipe extends ModuleAddon {
@@ -215,13 +217,13 @@ public abstract class ModuleRecipe extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (canUseAdvancedFeatures()) {
 			if (id == 0) {
 				dirty = true;
-				changeTarget(data[0] == 0);
+				changeTarget(reader.readByte() == 0);
 			} else if (id == 1) {
-				if (data[0] == 0) {
+				if (reader.readByte() == 0) {
 					if (++mode > 2) {
 						mode = 0;
 					}
@@ -229,10 +231,11 @@ public abstract class ModuleRecipe extends ModuleAddon {
 					mode = 2;
 				}
 			} else if (id == 2) {
-				int dif = ((data[0] & 0x1) == 0x0) ? 1 : -1;
-				if ((data[0] & 0x2) != 0x0) {
+				int m = reader.readByte();
+				int dif = ((m & 0x1) == 0x0) ? 1 : -1;
+				if ((m & 0x2) != 0x0) {
 					dif *= 64;
-				} else if ((data[0] & 0x4) != 0x0) {
+				} else if ((m & 0x4) != 0x0) {
 					dif *= 10;
 				}
 				maxItemCount = Math.min(Math.max(1, maxItemCount + dif), 999);

@@ -7,14 +7,14 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Mouse;
-import reborncore.common.network.NetworkManager;
+import vswe.stevescarts.StevesCarts;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ModuleCountPair;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
-import vswe.stevescarts.packet.PacketReturnCart;
+import vswe.stevescarts.network.message.MessageReturnCart;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -200,7 +200,7 @@ public class GuiMinecart extends GuiBase {
 				handleModuleMouseClicked(module, x, y, button);
 			}
 			if (inRect(x - getGuiLeft(), y - getGuiTop(), returnButton)) {
-				NetworkManager.sendToServer(new PacketReturnCart());
+				StevesCarts.NET.sendToServer(new MessageReturnCart());
 			}
 		}
 	}

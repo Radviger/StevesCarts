@@ -13,6 +13,9 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.realtimers.ModuleArcade;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ArcadeTetris extends ArcadeGame {
 	private TetrisBlock[][] board;
 	private TetrisPiece piece;
@@ -198,25 +201,15 @@ public class ArcadeTetris extends ArcadeGame {
 	private void newHighScore() {
 		if (score > highscore) {
 			final int val = score / 100;
-			final byte byte1 = (byte) (val & 0xFF);
-			final byte byte2 = (byte) ((val & 0xFF00) >> 8);
-			getModule().sendPacket(1, new byte[] { byte1, byte2 });
+			getModule().sendPacket(1, o -> o.writeInt(val));
 			newHighScore = true;
 		}
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 1) {
-			short data2 = data[0];
-			short data3 = data[1];
-			if (data2 < 0) {
-				data2 += 256;
-			}
-			if (data3 < 0) {
-				data3 += 256;
-			}
-			highscore = (data2 | data3 << 8) * 100;
+			highscore = reader.readInt() * 100;
 		}
 	}
 

@@ -2,14 +2,14 @@ package vswe.stevescarts.helpers.storages;
 
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fluids.*;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import reborncore.client.RenderUtil;
-import reborncore.common.util.FluidUtils;
 import vswe.stevescarts.guis.GuiBase;
 import vswe.stevescarts.helpers.Localization;
 
@@ -38,14 +38,14 @@ public class SCTank extends FluidTank {
 	public void containerTransfer() {
 		ItemStack item = owner.getInputContainer(tankid);
 		if (!item.isEmpty()) {
-			IFluidHandler handler = FluidUtils.getFluidHandler(item);
+			IFluidHandler handler = FluidUtil.getFluidHandler(item.copy());
 			if (handler != null && (this.fluid == null || this.capacity - this.fluid.amount >= Fluid.BUCKET_VOLUME)) {
 				FluidStack fluidStack = handler.drain(Fluid.BUCKET_VOLUME, false);
 				if (fluidStack != null && fluidStack.amount >= Fluid.BUCKET_VOLUME) {
 					FluidActionResult result = FluidUtil.tryEmptyContainer(item, this, Fluid.BUCKET_VOLUME, null, false);
 					if (result.isSuccess()) {
 						ItemStack container = result.getResult();
-						handler = FluidUtils.getFluidHandler(container);
+						handler = FluidUtil.getFluidHandler(container.copy());
 						if (handler != null) {
 							fluidStack = handler.drain(Fluid.BUCKET_VOLUME, false);
 							if (fluidStack != null && fluidStack.amount == Fluid.BUCKET_VOLUME) {
@@ -157,14 +157,17 @@ public class SCTank extends FluidTank {
 	@SideOnly(Side.CLIENT)
 	public void drawFluid(final GuiBase gui, final int startX, final int startY) {
 		if (fluid != null) {
+			if (fluid.getFluid() == null) {
+				return;
+			}
 			int fluidLevel = (int) (48 * ((float)fluid.amount / (float) capacity));
-
-			TextureAtlasSprite icon = RenderUtil.getStillTexture(fluid);
-			if (icon == null) {
+			ResourceLocation still = fluid.getFluid().getStill();
+			TextureAtlasSprite sprite = gui.mc.getTextureMapBlocks().getTextureExtry(still.toString());
+			if (sprite == null) {
 				return;
 			}
 
-			RenderUtil.bindBlockTexture();
+			gui.mc.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 			applyColorFilter(fluid);
 
 			GlStateManager.enableBlend();
@@ -178,7 +181,7 @@ public class SCTank extends FluidTank {
 				}
 
 				for (int x = 0; x < 2; x++) {
-					owner.drawImage(tankid, gui, icon, startX + 2 + 16 * x, startY + 1 + 16 * y + (16 - pixels), 0, (16 - pixels), 16, pixels);
+					owner.drawImage(tankid, gui, sprite, startX + 2 + 16 * x, startY + 1 + 16 * y + (16 - pixels), 0, (16 - pixels), 16, pixels);
 				}
 			}
 			GlStateManager.enableBlend();

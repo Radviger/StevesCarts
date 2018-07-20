@@ -10,6 +10,9 @@ import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.helpers.HeightControlOre;
 import vswe.stevescarts.helpers.ResourceHelper;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ModuleHeightControl extends ModuleAddon {
 	private int levelNumberBoxX;
 	private int levelNumberBoxY;
@@ -137,9 +140,9 @@ public class ModuleHeightControl extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(int id, byte[] data, EntityPlayer player) {
+	protected void receivePacket(int id, DataInput reader, EntityPlayer player) throws IOException {
 		if (id == 0) {
-			byte info = data[0];
+			byte info = reader.readByte();
 			if ((info & 0x1) != 0x0) {
 				setYTarget((int) getCart().posY);
 			} else {

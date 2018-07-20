@@ -1,5 +1,6 @@
 package vswe.stevescarts.renders;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
@@ -7,13 +8,13 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fluids.FluidStack;
 import org.lwjgl.opengl.GL11;
-import reborncore.client.RenderUtil;
 import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.helpers.storages.SCTank;
 import vswe.stevescarts.models.ModelCartbase;
@@ -109,7 +110,12 @@ public class RendererCart<T extends EntityMinecartModular> extends Render<T> {
 	}
 
 	public void renderLiquidCuboid(final FluidStack fluid, final int tankSize, final float x, final float y, final float z, final float sizeX, final float sizeY, final float sizeZ, float mult) {
-		TextureAtlasSprite sprite = RenderUtil.getStillTexture(fluid);
+		if (fluid == null || fluid.getFluid() == null) {
+			return;
+		}
+		Minecraft mc = Minecraft.getMinecraft();
+		ResourceLocation still = fluid.getFluid().getStill();
+		TextureAtlasSprite sprite = mc.getTextureMapBlocks().getTextureExtry(still.toString());
 		if (sprite == null) {
 			return;
 		}
@@ -118,7 +124,7 @@ public class RendererCart<T extends EntityMinecartModular> extends Render<T> {
 			GlStateManager.pushMatrix();
 			GlStateManager.translate(x * mult, (y + sizeY * (1.0f - filled) / 2.0f) * mult, z * mult);
 
-			RenderUtil.bindBlockTexture();
+			bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 			SCTank.applyColorFilter(fluid);
 			final float scale = 0.5f;
 			GlStateManager.scale(scale, scale, scale);
@@ -237,7 +243,7 @@ public class RendererCart<T extends EntityMinecartModular> extends Render<T> {
 	}
 
 	@Override
-	public void doRender(final EntityMinecartModular par1Entity, final double x, final double y, final double z, final float yaw, final float partialTickTime) {
-		renderCart(par1Entity, x, y, z, yaw, partialTickTime);
+	public void doRender(final EntityMinecartModular cart, final double x, final double y, final double z, final float yaw, final float partialTickTime) {
+		renderCart(cart, x, y, z, yaw, partialTickTime);
 	}
 }

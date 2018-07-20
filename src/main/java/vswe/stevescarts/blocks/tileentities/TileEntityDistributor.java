@@ -24,6 +24,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.wrapper.SidedInvWrapper;
+import vswe.stevescarts.api.util.CheckedConsumer;
 import vswe.stevescarts.containers.ContainerBase;
 import vswe.stevescarts.containers.ContainerDistributor;
 import vswe.stevescarts.guis.GuiBase;
@@ -32,10 +33,13 @@ import vswe.stevescarts.helpers.DistributorSetting;
 import vswe.stevescarts.helpers.DistributorSide;
 import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.storages.SCTank;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageStevesCarts;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -133,23 +137,23 @@ public class TileEntityDistributor extends TileEntityBase implements IInventory,
 		dirty = true;
 	}
 
-	protected void sendPacket(final int id) {
-		sendPacket(id, new byte[0]);
+	public void sendPacket(final int id) {
+		sendPacket(id, o -> o.writeByte(0));
 	}
 
-	protected void sendPacket(final int id, final byte data) {
-		sendPacket(id, new byte[] { data });
+	public void sendPacket(final int id, final byte data) {
+		sendPacket(id, o -> o.writeByte(data));
 	}
 
-	public void sendPacket(final int id, final byte[] data) {
-		PacketStevesCarts.sendPacket(id, data);
+	public void sendPacket(final int id, final CheckedConsumer<DataOutput, IOException> writer) {
+		MessageStevesCarts.sendPacket(id, writer);
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0 || id == 1) {
-			final byte settingId = data[0];
-			final byte sideId = data[1];
+			final byte settingId = reader.readByte();
+			final byte sideId = reader.readByte();
 			if (settingId >= 0 && settingId < DistributorSetting.settings.size() && sideId >= 0 && sideId < getSides().size()) {
 				if (id == 0) {
 					getSides().get(sideId).set(settingId);

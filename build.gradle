@@ -55,9 +55,6 @@ dependencies {
 	deobfCompile ('net.sengir.forestry:forestry_1.12.2:+'){
 		transitive = false
 	}
-	compile ('RebornCore:RebornCore-1.12.2:+:dev'){
-		transitive = false
-	}
 	deobfCompile  'net.industrial-craft:industrialcraft-2:2.8.85-ex112'
 }
 

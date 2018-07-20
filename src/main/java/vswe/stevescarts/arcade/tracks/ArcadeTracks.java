@@ -12,6 +12,8 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.realtimers.ModuleArcade;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class ArcadeTracks extends ArcadeGame {
@@ -76,7 +78,10 @@ public class ArcadeTracks extends ArcadeGame {
 			@Override
 			public void onCrash() {
 				if (isPlayingFinalLevel() && currentStory < unlockedLevels.length - 1 && unlockedLevels[currentStory + 1] == -1) {
-					getModule().sendPacket(0, new byte[] { (byte) (currentStory + 1), 0 });
+					getModule().sendPacket(0, o -> {
+						o.writeByte((byte)(currentStory + 1));
+						o.writeByte(0);
+					});
 				}
 			}
 		});
@@ -434,7 +439,10 @@ public class ArcadeTracks extends ArcadeGame {
 		if (isPlayingNormalLevel()) {
 			final int nextLevel = currentLevel + 1;
 			if (nextLevel > unlockedLevels[currentStory]) {
-				getModule().sendPacket(0, new byte[] { (byte) currentStory, (byte) nextLevel });
+				getModule().sendPacket(0, o -> {
+				    o.writeByte((byte)currentStory);
+				    o.writeByte((byte)nextLevel);
+                });
 			}
 		}
 	}
@@ -712,11 +720,12 @@ public class ArcadeTracks extends ArcadeGame {
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			unlockedLevels[data[0]] = data[1];
-			if (unlockedLevels[data[0]] > TrackStory.stories.get(data[0]).getLevels().size() - 1) {
-				unlockedLevels[data[0]] = TrackStory.stories.get(data[0]).getLevels().size() - 1;
+			byte i = reader.readByte();
+			unlockedLevels[i] = reader.readInt();
+			if (unlockedLevels[i] > TrackStory.stories.get(i).getLevels().size() - 1) {
+				unlockedLevels[i] = TrackStory.stories.get(i).getLevels().size() - 1;
 			}
 		}
 	}

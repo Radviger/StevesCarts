@@ -15,6 +15,8 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class ModuleNote extends ModuleBase {
@@ -235,7 +237,7 @@ public class ModuleNote extends ModuleBase {
 				for (final Track track2 : tracks) {
 					if (track2.notes.size() > playProgress) {
 						final Note note = track2.notes.get(playProgress);
-						float volume = 0.0f;
+						float volume;
 						switch (track2.volume) {
 							case 0: {
 								volume = 0.0f;
@@ -456,16 +458,15 @@ public class ModuleNote extends ModuleBase {
 					if (inRect(x, y, note.getBounds(i - getScrollY(), j - getScrollX()))) {
 						int instrumentInfo = currentInstrument;
 						if (instrumentInfo == -1) {
-							if (buttonId == 0) {
-								instrumentInfo = 6;
-							} else {
-								instrumentInfo = 7;
-							}
+							instrumentInfo = buttonId == 0 ? 6 : 7;
 						}
 						if (currentInstrument != -1 || note.instrumentId != 0) {
-							byte info = (byte) i;
-							info |= instrumentInfo << maximumTracksPerModuleBitCount;
-							sendPacket(2, new byte[] { info, (byte) (j & 0xff), (byte) ((j >> 8) & 0xff)});
+							final byte info = (byte) (i | instrumentInfo << maximumTracksPerModuleBitCount);
+                            int idx = j;
+                            sendPacket(2, o -> {
+								o.writeByte(info);
+								o.writeInt(idx);
+							});
 						}
 					}
 				}
@@ -545,25 +546,26 @@ public class ModuleNote extends ModuleBase {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
+		byte i = reader.readByte();
 		if (id == 0) {
-			if (data[0] == 0) {
+			if (i == 0) {
 				if (tracks.size() < maximumTracksPerModule) {
 					new Track();
 				}
-			} else if (data[0] == 1) {
+			} else if (i == 1) {
 				if (tracks.size() > 0) {
 					tracks.remove(tracks.size() - 1);
 				}
-			} else if (data[0] == 2) {
+			} else if (i == 2) {
 				++speedSetting;
 				if (speedSetting >= 7) {
 					speedSetting = 0;
 				}
 			}
 		} else if (id == 1) {
-			int trackID = data[0] & maximumTracksPerModule;
-			int trackPacketID = (data[0] & ~maximumTracksPerModule) >> maximumTracksPerModuleBitCount;
+			int trackID = i & maximumTracksPerModule;
+			int trackPacketID = (i & ~maximumTracksPerModule) >> maximumTracksPerModuleBitCount;
 			if (trackID < tracks.size()) {
 				final Track track = tracks.get(trackID);
 				if (trackPacketID == 0) {
@@ -579,10 +581,9 @@ public class ModuleNote extends ModuleBase {
 				}
 			}
 		} else if (id == 2) {
-			byte info = data[0];
-			short noteID = (short) ((0xFF & data[1]) | ((data[2] & 0xFF) << 8));
-			byte trackID = (byte) (info & maximumTracksPerModule);
-			byte instrumentInfo = (byte) (((byte) (info & ~(byte) maximumTracksPerModule)) >> (byte)maximumTracksPerModuleBitCount);
+			byte trackID = (byte) (i & maximumTracksPerModule);
+            short noteID = (short) reader.readInt();
+            byte instrumentInfo = (byte) (((byte) (i & ~(byte) maximumTracksPerModule)) >> (byte)maximumTracksPerModuleBitCount);
 			if (trackID < tracks.size()) {
 				final Track track = tracks.get(trackID);
 				if (noteID < track.notes.size()) {

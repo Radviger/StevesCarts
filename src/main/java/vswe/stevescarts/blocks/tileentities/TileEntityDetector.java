@@ -21,6 +21,9 @@ import vswe.stevescarts.guis.GuiDetector;
 import vswe.stevescarts.helpers.DetectorType;
 import vswe.stevescarts.helpers.LogicObject;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class TileEntityDetector extends TileEntityBase {
 	public LogicObject mainObj;
 	private int activeTimer;
@@ -100,7 +103,7 @@ public class TileEntityDetector extends TileEntityBase {
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
 			byte lowestId = -1;
 			for (int i = 0; i < 128; ++i) {
@@ -112,9 +115,9 @@ public class TileEntityDetector extends TileEntityBase {
 			if (lowestId == -1) {
 				return;
 			}
-			createObject(lowestId, data[0], data[1], data[2]);
+			createObject(lowestId, reader.readByte(), reader.readByte(), reader.readByte());
 		} else if (id == 1) {
-			removeObject(mainObj, data[0]);
+			removeObject(mainObj, reader.readByte());
 		}
 	}
 

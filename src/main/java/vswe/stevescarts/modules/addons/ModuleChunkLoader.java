@@ -11,6 +11,8 @@ import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.IActivatorModule;
 
+import java.io.DataInput;
+
 public class ModuleChunkLoader extends ModuleAddon implements IActivatorModule {
 	private boolean rdyToInit;
 	private int[] buttonRect;
@@ -108,7 +110,7 @@ public class ModuleChunkLoader extends ModuleAddon implements IActivatorModule {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0) {
 			setChunkLoading(!isLoadingChunk());
 		}

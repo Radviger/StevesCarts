@@ -10,6 +10,9 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.addons.ModuleAddon;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ModulePlantSize extends ModuleAddon {
 	private int size;
 	private int[] boxrect;
@@ -74,9 +77,9 @@ public class ModulePlantSize extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			if (data[0] == 1) {
+			if (reader.readByte() == 1) {
 				--size;
 				if (size < 1) {
 					size = 7;

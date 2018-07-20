@@ -2,7 +2,7 @@ package vswe.stevescarts.containers.slots;
 
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import reborncore.common.util.FluidUtils;
+import net.minecraftforge.fluids.FluidUtil;
 import vswe.stevescarts.helpers.storages.TransferHandler;
 
 import javax.annotation.Nonnull;
@@ -19,7 +19,7 @@ public class SlotLiquidOutput extends SlotBase implements ISpecialItemTransferVa
 
 	@Override
 	public boolean isItemValidForTransfer(@Nonnull ItemStack item, final TransferHandler.TRANSFER_TYPE type) {
-		return type == TransferHandler.TRANSFER_TYPE.OTHER && FluidUtils.getFluidHandler(item) != null;
+		return type == TransferHandler.TRANSFER_TYPE.OTHER && FluidUtil.getFluidHandler(item) != null;
 	}
 
 	public static boolean isItemStackValid(@Nonnull ItemStack itemstack) {

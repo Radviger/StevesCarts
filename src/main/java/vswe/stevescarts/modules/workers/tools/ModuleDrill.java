@@ -30,6 +30,7 @@ import vswe.stevescarts.modules.addons.*;
 import vswe.stevescarts.modules.storages.chests.ModuleChest;
 
 import javax.annotation.Nonnull;
+import java.io.DataInput;
 import java.util.List;
 
 public abstract class ModuleDrill extends ModuleTool implements IActivatorModule {
@@ -382,7 +383,7 @@ public abstract class ModuleDrill extends ModuleTool implements IActivatorModule
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0) {
 			setDrillEnabled(!isDrillEnabled());
 		}

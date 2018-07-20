@@ -10,11 +10,11 @@ import vswe.stevescarts.containers.ContainerActivator;
 import vswe.stevescarts.helpers.ActivatorOption;
 import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageStevesCarts;
 
 @SideOnly(Side.CLIENT)
 public class GuiActivator extends GuiBase {
-	private static ResourceLocation texture;
+	private static ResourceLocation texture = ResourceHelper.getResource("/gui/activator.png");
 	TileEntityActivator activator;
 	InventoryPlayer invPlayer;
 
@@ -82,14 +82,9 @@ public class GuiActivator extends GuiBase {
 		for (int i = 0; i < activator.getOptions().size(); ++i) {
 			final int[] box = getBoxRect(i);
 			if (inRect(x, y, box)) {
-				byte data = (byte) ((button != 0) ? 1 : 0);
-				data |= (byte) (i << 1);
-				PacketStevesCarts.sendPacket(0, new byte[] { data });
+				byte data = (byte) (((button != 0) ? 1 : 0) |(i << 1));
+				MessageStevesCarts.sendPacket(0, o -> o.writeByte(data));
 			}
 		}
-	}
-
-	static {
-		GuiActivator.texture = ResourceHelper.getResource("/gui/activator.png");
 	}
 }

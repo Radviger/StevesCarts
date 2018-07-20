@@ -12,6 +12,8 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ILeverModule;
 
+import java.io.DataInput;
+
 public class ModuleBrake extends ModuleAddon implements ILeverModule {
 	private int[] startstopRect;
 	private int[] turnbackRect;
@@ -101,7 +103,7 @@ public class ModuleBrake extends ModuleAddon implements ILeverModule {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0) {
 			setForceStopping(!isForceStopping());
 		} else if (id == 1) {

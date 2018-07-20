@@ -155,10 +155,12 @@ public class GuiDistributor extends GuiBase {
 				if (side.isEnabled(distributor)) {
 					final int[] box = getSideBoxRect(id++);
 					if (inRect(x, y, box)) {
-						distributor.sendPacket(0, new byte[] { (byte) activeId, (byte) side.getId() });
+						distributor.sendPacket(0, o -> {
+							o.writeByte((byte) activeId);
+							o.writeByte((byte) side.getId());
+						});
 						break;
 					}
-					continue;
 				}
 			}
 			activeId = -1;
@@ -173,7 +175,10 @@ public class GuiDistributor extends GuiBase {
 							if (!inRect(x, y, settingbox)) {
 								continue;
 							}
-							distributor.sendPacket(1, new byte[] { (byte) setting.getId(), (byte) side.getId() });
+							distributor.sendPacket(1, o -> {
+								o.writeByte((byte) setting.getId());
+								o.writeByte((byte) side.getId());
+							});
 						}
 					}
 					++id;

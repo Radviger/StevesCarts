@@ -9,7 +9,7 @@ import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.guis.GuiDetector;
 import vswe.stevescarts.modules.ModuleBase;
 import vswe.stevescarts.modules.data.ModuleData;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageStevesCarts;
 
 import java.util.ArrayList;
 
@@ -36,12 +36,16 @@ public class LogicObject {
 
 	public void setParent(final TileEntityDetector detector, final LogicObject parent) {
 		if (parent != null) {
-			PacketStevesCarts.sendPacket(0, new byte[] { parent.id, getExtra(), data });
+			MessageStevesCarts.sendPacket(0, o -> {
+				o.writeByte(parent.id);
+				o.writeByte(getExtra());
+				o.writeByte(data);
+			});
 			for (final LogicObject child : childs) {
 				child.setParent(detector, this);
 			}
 		} else {
-			PacketStevesCarts.sendPacket(1, new byte[] { id });
+			MessageStevesCarts.sendPacket(1, o -> o.writeByte(id));
 		}
 	}
 

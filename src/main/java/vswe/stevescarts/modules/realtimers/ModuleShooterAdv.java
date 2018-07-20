@@ -17,6 +17,8 @@ import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 import vswe.stevescarts.modules.addons.mobdetectors.ModuleMobdetector;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -189,9 +191,9 @@ public class ModuleShooterAdv extends ModuleShooter {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			switchOption(data[0]);
+			switchOption(reader.readByte());
 		}
 	}
 

@@ -11,6 +11,9 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.engines.ModuleEngine;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ModulePowerObserver extends ModuleAddon {
 	private short[] areaData;
 	private short[] powerLevel;
@@ -180,23 +183,20 @@ public class ModulePowerObserver extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
+		final int area = reader.readByte();
 		if (id == 0) {
-			final int area = data[0];
-			final int engine = data[1];
+			final int engine = reader.readByte();
 			final short[] areaData = this.areaData;
-			final int n = area;
-			areaData[n] |= (short) (1 << engine);
+			areaData[area] |= (short) (1 << engine);
 		} else if (id == 1) {
-			final int area = data[0];
-			final int engine = data[1];
+			final int engine = reader.readByte();
 			final short[] areaData2 = areaData;
-			final int n2 = area;
-			areaData2[n2] &= (short) ~(1 << engine);
+			areaData2[area] &= (short) ~(1 << engine);
 		} else if (id == 2) {
-			final int area = data[0];
-			final int button = data[1] & 0x1;
-			final boolean shift = (data[1] & 0x2) != 0x0;
+			int m = reader.readByte();
+			final int button = m & 0x1;
+			final boolean shift = (m & 0x2) != 0x0;
 			int change = (button == 0) ? 1 : -1;
 			if (shift) {
 				change *= 10;
@@ -219,7 +219,11 @@ public class ModulePowerObserver extends ModuleAddon {
 				for (int i = 0; i < 4; ++i) {
 					final int[] rect = getAreaRect(i);
 					if (inRect(x, y, rect)) {
-						sendPacket(0, new byte[] { (byte) i, (byte) currentEngine });
+						int idx = i;
+						sendPacket(0, o -> {
+							o.writeByte((byte) idx);
+							o.writeByte((byte)currentEngine);
+						});
 						break;
 					}
 				}
@@ -233,7 +237,11 @@ public class ModulePowerObserver extends ModuleAddon {
 		for (int i = 0; i < 4; ++i) {
 			final int[] rect = getPowerRect(i);
 			if (inRect(x, y, rect)) {
-				sendPacket(2, new byte[] { (byte) i, (byte) (button | (GuiScreen.isShiftKeyDown() ? 2 : 0)) });
+				int idx = i;
+				sendPacket(2, o -> {
+					o.writeByte((byte) idx);
+					o.writeByte((byte)(button | (GuiScreen.isShiftKeyDown() ? 2 : 0)));
+				});
 				break;
 			}
 		}
@@ -248,11 +256,16 @@ public class ModulePowerObserver extends ModuleAddon {
 		} else if (button == 1) {
 			for (int i = 0; i < 4; ++i) {
 				int count = 0;
+				final int idx = i;
 				for (int j = 0; j < getCart().getEngines().size(); ++j) {
 					if ((areaData[i] & 1 << j) != 0x0) {
 						final int[] rect2 = getEngineRectInArea(i, count);
 						if (inRect(x, y, rect2)) {
-							sendPacket(1, new byte[] { (byte) i, (byte) j });
+							final int jdx = j;
+							sendPacket(1, o -> {
+								o.writeByte((byte) idx);
+								o.writeByte((byte) jdx);
+							});
 							break;
 						}
 						++count;

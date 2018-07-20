@@ -10,12 +10,12 @@ import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.IFluidTank;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import reborncore.common.network.NetworkManager;
-import reborncore.common.util.FluidUtils;
+import vswe.stevescarts.StevesCarts;
 import vswe.stevescarts.containers.ContainerBase;
 import vswe.stevescarts.containers.ContainerLiquid;
 import vswe.stevescarts.containers.ContainerManager;
@@ -30,7 +30,7 @@ import vswe.stevescarts.helpers.storages.SCTank;
 import vswe.stevescarts.helpers.storages.TransferHandler;
 import vswe.stevescarts.helpers.storages.TransferManager;
 import vswe.stevescarts.modules.storages.tanks.ModuleTank;
-import vswe.stevescarts.packet.PacketFluidSync;
+import vswe.stevescarts.network.message.MessageFluidSync;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -224,7 +224,7 @@ public class TileEntityLiquid extends TileEntityManager implements ITankHolder {
 	private boolean isFluidValid(final int sideId, final FluidStack fluid) {
 		@Nonnull
 		ItemStack filter = getStackInSlot(sideId * 3 + 2);
-		final FluidStack filterFluid = FluidUtils.getFluidStackInContainer(filter);
+		final FluidStack filterFluid = FluidUtil.getFluidContained(filter);
 		return filterFluid == null || filterFluid.isFluidEqual(fluid);
 	}
 
@@ -296,6 +296,8 @@ public class TileEntityLiquid extends TileEntityManager implements ITankHolder {
 		super.checkGuiData(conManager, crafting, isNew);
 		final ContainerLiquid con = (ContainerLiquid) conManager;
 		for (int i = 0; i < 4; ++i) {
+			SCTank tank = this.tanks[i];
+			FluidStack fluid = tank.getFluid();
 			boolean changed = false;
 			final int id = 4 + i * 4;
 			final int amount1 = 4 + i * 4 + 1;
@@ -306,15 +308,16 @@ public class TileEntityLiquid extends TileEntityManager implements ITankHolder {
 				changed = true;
 			} else if (tanks[i].getFluid() != null) {
 				if (isNew || con.oldLiquids[i] == null) {
-					updateGuiData(con, crafting, id, (short) this.tanks[i].getFluid().amount);
-					updateGuiData(con, crafting, amount1, getShortFromInt(true, tanks[i].getFluid().amount));
-					updateGuiData(con, crafting, amount2, getShortFromInt(false, tanks[i].getFluid().amount));
+					updateGuiData(con, crafting, id, (short) fluid.amount);
+					updateGuiData(con, crafting, amount1, getShortFromInt(true, fluid.amount));
+					updateGuiData(con, crafting, amount2, getShortFromInt(false, fluid.amount));
 					changed = true;
 				} else {
-					NetworkManager.sendToWorld(new PacketFluidSync(this.tanks[i].getFluid(), getPos(), world.provider.getDimension(), i), getWorld());
-					if (con.oldLiquids[i].amount != tanks[i].getFluid().amount) {
-						updateGuiData(con, crafting, amount1, getShortFromInt(true, tanks[i].getFluid().amount));
-						updateGuiData(con, crafting, amount2, getShortFromInt(false, tanks[i].getFluid().amount));
+					int dimension = world.provider.getDimension();
+					StevesCarts.NET.sendToDimension(new MessageFluidSync(fluid, getPos(), dimension, i), dimension);
+					if (con.oldLiquids[i].amount != fluid.amount) {
+						updateGuiData(con, crafting, amount1, getShortFromInt(true, fluid.amount));
+						updateGuiData(con, crafting, amount2, getShortFromInt(false, fluid.amount));
 						changed = true;
 					}
 				}

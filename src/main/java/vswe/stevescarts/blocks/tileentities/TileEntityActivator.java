@@ -21,6 +21,8 @@ import vswe.stevescarts.modules.realtimers.ModuleCage;
 import vswe.stevescarts.modules.workers.ModuleRemover;
 import vswe.stevescarts.modules.workers.tools.ModuleDrill;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class TileEntityActivator extends TileEntityBase {
@@ -56,27 +58,28 @@ public class TileEntityActivator extends TileEntityBase {
 	}
 
 	@Override
-	public void readFromNBT(final NBTTagCompound nbttagcompound) {
-		super.readFromNBT(nbttagcompound);
+	public void readFromNBT(final NBTTagCompound compound) {
+		super.readFromNBT(compound);
 		for (final ActivatorOption option : options) {
-			option.setOption(nbttagcompound.getByte(option.getName()));
+			option.setOption(compound.getByte(option.getName()));
 		}
 	}
 
 	@Override
-	public NBTTagCompound writeToNBT(final NBTTagCompound nbttagcompound) {
-		super.writeToNBT(nbttagcompound);
+	public NBTTagCompound writeToNBT(final NBTTagCompound compound) {
+		super.writeToNBT(compound);
 		for (final ActivatorOption option : options) {
-			nbttagcompound.setByte(option.getName(), (byte) option.getOption());
+			compound.setByte(option.getName(), (byte) option.getOption());
 		}
-		return nbttagcompound;
+		return compound;
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			final boolean leftClick = (data[0] & 0x1) == 0x0;
-			final int optionId = (data[0] & 0xFFFFFFFE) >> 1;
+			final byte data = reader.readByte();
+			final boolean leftClick = (data & 0x1) == 0x0;
+			final int optionId = (data & 0xFFFFFFFE) >> 1;
 			if (optionId >= 0 && optionId < options.size()) {
 				options.get(optionId).changeOption(leftClick);
 			}

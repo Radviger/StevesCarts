@@ -29,6 +29,7 @@ import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import vswe.stevescarts.api.util.CheckedConsumer;
 import vswe.stevescarts.containers.ContainerMinecart;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.entitys.EntityMinecartModular;
@@ -40,9 +41,12 @@ import vswe.stevescarts.helpers.NBTHelper;
 import vswe.stevescarts.helpers.SimulationInfo;
 import vswe.stevescarts.models.ModelCartbase;
 import vswe.stevescarts.modules.data.ModuleData;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageStevesCarts;
 
 import javax.annotation.Nonnull;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -784,7 +788,10 @@ public abstract class ModuleBase {
 	public void sendButtonPacket(final ButtonBase button, final byte clickinfo) {
 		final byte id = (byte) button.getIdInModule();
 		System.out.println("Sent button " + button.getIdInModule());
-		sendPacket(totalNumberOfPackets() - 1, new byte[] { id, clickinfo });
+		sendPacket(totalNumberOfPackets() - 1, o -> {
+			o.writeByte(id);
+			o.write(clickinfo);
+		});
 	}
 
 	/**
@@ -927,7 +934,7 @@ public abstract class ModuleBase {
 	 * @param id The local id of the packet
 	 */
 	protected void sendPacket(final int id) {
-		sendPacket(id, new byte[0]);
+		sendPacket(id, o -> o.writeByte(0));
 	}
 
 	/**
@@ -936,16 +943,16 @@ public abstract class ModuleBase {
 	 * @param data An extra byte sent along
 	 */
 	public void sendPacket(final int id, final byte data) {
-		sendPacket(id, new byte[] { data });
+		sendPacket(id, o -> o.writeByte(data));
 	}
 
 	/**
 	 * Sends a packet from the client to the server
 	 * @param id The local id of the packet
-	 * @param data A byte array of data sent along
+	 * @param writer A byte array of data sent along
 	 */
-	public void sendPacket(final int id, final byte[] data) {
-		PacketStevesCarts.sendPacket(getPacketStart() + id, data);
+	public void sendPacket(final int id, final CheckedConsumer<DataOutput, IOException> writer) {
+		MessageStevesCarts.sendPacket(getPacketStart() + id, writer);
 	}
 
 	/**
@@ -954,56 +961,46 @@ public abstract class ModuleBase {
 	 * @param player The player to send it to
 	 */
 	protected void sendPacket(final int id, final EntityPlayer player) {
-		sendPacket(id, new byte[0], player);
+		sendPacket(id, o -> o.writeByte(0), player);
 	}
 
 	/**
 	 * Sends a packet from the server to a player's client
 	 * @param id The local id of the packet
-	 * @param data An extra byte sent along
+	 * @param writer A byte array of data sent along
 	 * @param player The player to send it to
 	 */
-	protected void sendPacket(final int id, final byte data, final EntityPlayer player) {
-		sendPacket(id, new byte[] { data }, player);
-	}
-
-	/**
-	 * Sends a packet from the server to a player's client
-	 * @param id The local id of the packet
-	 * @param data A byte array of data sent along
-	 * @param player The player to send it to
-	 */
-	protected void sendPacket(final int id, final byte[] data, final EntityPlayer player) {
-		PacketStevesCarts.sendPacketToPlayer(getPacketStart() + id, data, player, getCart());
+	protected void sendPacket(final int id, final CheckedConsumer<DataOutput, IOException> writer, final EntityPlayer player) {
+		MessageStevesCarts.sendPacketToPlayer(getPacketStart() + id, writer, player, getCart());
 	}
 
 	/**
 	 * Receive a normal packet on the server or the client
 	 * @param id The local id of the packet
-	 * @param data The byte array of extra data, could be empty
+	 * @param reader The byte array of extra data, could be empty
 	 * @param player The player who sent or received the packet
 	 */
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {}
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {}
 
 	/**
 	 * Handles a packet received on the server or the client and sends it where it should be handled
 	 * @param id The local id of the packet
-	 * @param data The byte array of extra data, could be empty
+	 * @param reader The byte array of extra data, could be empty
 	 * @param player The player who sent or received the packet
 	 */
-	public final void delegateReceivedPacket(final int id, final byte[] data, final EntityPlayer player) {
+	public final void delegateReceivedPacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id < 0 || id >= totalNumberOfPackets()) {
 			return;
 		}
 		if (id == totalNumberOfPackets() - 1 && useButtons()) {
-			int buttonId = data[0];
+			int buttonId = reader.readByte();
 			if (buttonId < 0) {
 				buttonId += 256;
 			}
 			System.out.println("Received button " + buttonId);
+			final byte buttoninformation = reader.readByte();
 			for (final ButtonBase button : buttons) {
 				if (button.getIdInModule() == buttonId) {
-					final byte buttoninformation = data[1];
 					final boolean isCtrlDown = (buttoninformation & 0x40) != 0x0;
 					final boolean isShiftDown = (buttoninformation & 0x80) != 0x0;
 					final int mousebutton = buttoninformation & 0x3F;
@@ -1015,7 +1012,7 @@ public abstract class ModuleBase {
 				}
 			}
 		} else {
-			receivePacket(id, data, player);
+			receivePacket(id, reader, player);
 		}
 	}
 

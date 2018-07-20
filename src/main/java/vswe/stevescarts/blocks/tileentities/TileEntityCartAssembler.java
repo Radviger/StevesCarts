@@ -40,6 +40,8 @@ import vswe.stevescarts.modules.data.ModuleDataHull;
 import vswe.stevescarts.upgrades.*;
 
 import javax.annotation.Nonnull;
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class TileEntityCartAssembler extends TileEntityBase implements IInventory, ISidedInventory {
@@ -278,11 +280,11 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
 			doAssemble();
 		} else if (id == 1) {
-			final int slotId = data[0];
+			final int slotId = reader.readByte();
 			if (slotId >= 1 && slotId < getSlots().size()) {
 				final SlotAssembler slot = getSlots().get(slotId);
 				if (!slot.getStack().isEmpty()) {

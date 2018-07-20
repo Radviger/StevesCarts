@@ -15,6 +15,8 @@ import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class ModuleArcade extends ModuleBase {
@@ -202,9 +204,9 @@ public class ModuleArcade extends ModuleBase {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		for (final ArcadeGame game : games) {
-			game.receivePacket(id, data, player);
+			game.receivePacket(id, reader, player);
 		}
 	}
 

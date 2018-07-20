@@ -10,6 +10,8 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 
+import java.io.DataInput;
+
 public class ModuleSeat extends ModuleBase {
 	private int[] buttonRect;
 	private boolean relative;
@@ -90,7 +92,7 @@ public class ModuleSeat extends ModuleBase {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0 && player != null) {
 			if (getCart().getCartRider() == null) {
 				player.startRiding(getCart());

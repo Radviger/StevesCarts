@@ -12,6 +12,9 @@ import vswe.stevescarts.handlers.SoundHandler;
 import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.modules.realtimers.ModuleArcade;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public abstract class ArcadeGame {
 	private ModuleArcade module;
 	private Localization.ARCADE name;
@@ -66,7 +69,7 @@ public abstract class ArcadeGame {
 	public void Load(final NBTTagCompound tagCompound, final int id) {
 	}
 
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 	}
 
 	public void checkGuiData(final Object[] info) {

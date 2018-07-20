@@ -21,6 +21,8 @@ import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ISuppliesModule;
 
 import javax.annotation.Nonnull;
+import java.io.DataInput;
+import java.io.IOException;
 
 public class ModuleTorch extends ModuleWorker implements ISuppliesModule {
 	private int light;
@@ -165,9 +167,9 @@ public class ModuleTorch extends ModuleWorker implements ISuppliesModule {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			lightLimit = data[0];
+			lightLimit = reader.readByte();
 			if (lightLimit < 0) {
 				lightLimit = 0;
 			} else if (lightLimit > 15) {

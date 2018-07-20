@@ -11,9 +11,12 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import vswe.stevescarts.containers.ContainerBase;
 import vswe.stevescarts.guis.GuiBase;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public abstract class TileEntityBase extends TileEntity implements ITickable {
 
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 	}
 
 	@SideOnly(Side.CLIENT)

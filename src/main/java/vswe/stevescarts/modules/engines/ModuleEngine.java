@@ -9,6 +9,9 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public abstract class ModuleEngine extends ModuleBase {
 	private int fuel;
 	protected int[] priorityButton;
@@ -126,10 +129,10 @@ public abstract class ModuleEngine extends ModuleBase {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
 			int prio = getPriority();
-			prio += ((data[0] == 0) ? 1 : -1);
+			prio += ((reader.readByte() == 0) ? 1 : -1);
 			prio %= 4;
 			if (prio < 0) {
 				prio += 4;

@@ -10,6 +10,9 @@ import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 import vswe.stevescarts.modules.workers.tools.ModuleDrill;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ModuleDrillIntelligence extends ModuleAddon {
 	private ModuleDrill drill;
 	private boolean hasHeightController;
@@ -211,9 +214,9 @@ public class ModuleDrillIntelligence extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			swapActiveness(data[0]);
+			swapActiveness(reader.readByte());
 		}
 	}
 

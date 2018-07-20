@@ -4,8 +4,8 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.capability.IFluidHandler;
-import reborncore.common.util.FluidUtils;
 import vswe.stevescarts.helpers.storages.SCTank;
 
 import javax.annotation.Nonnull;
@@ -30,7 +30,7 @@ public class SlotLiquidInput extends SlotBase {
 
 	@Override
 	public boolean isItemValid(@Nonnull ItemStack itemstack) {
-		IFluidHandler handler = FluidUtils.getFluidHandler(itemstack);
+		IFluidHandler handler = FluidUtil.getFluidHandler(itemstack.copy());
 		if (handler == null) return false;
 
 		FluidStack fluidStack = handler.drain(Fluid.BUCKET_VOLUME, false);

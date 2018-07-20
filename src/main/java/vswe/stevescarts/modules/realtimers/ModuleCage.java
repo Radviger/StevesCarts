@@ -19,6 +19,7 @@ import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.IActivatorModule;
 import vswe.stevescarts.modules.ModuleBase;
 
+import java.io.DataInput;
 import java.util.Comparator;
 import java.util.List;
 
@@ -102,7 +103,7 @@ public class ModuleCage extends ModuleBase implements IActivatorModule {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0) {
 			disablePickup = !disablePickup;
 		} else if (id == 1) {

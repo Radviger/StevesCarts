@@ -6,7 +6,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
-import reborncore.common.util.FluidUtils;
+import net.minecraftforge.fluids.FluidUtil;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.containers.slots.SlotMilker;
 import vswe.stevescarts.entitys.EntityMinecartModular;
@@ -41,7 +41,7 @@ public class ModuleMilker extends ModuleBase {
 
 	private void depositeMilk() {
 		if (milkbuffer > 0) {
-			final FluidStack ret = FluidUtils.getFluidStackInContainer(new ItemStack(Items.MILK_BUCKET));
+			final FluidStack ret = FluidUtil.getFluidContained(new ItemStack(Items.MILK_BUCKET));
 			if (ret != null) {
 				ret.amount = milkbuffer;
 				milkbuffer -= getCart().fill(ret, true);

@@ -10,6 +10,9 @@ import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ModuleColorizer extends ModuleAddon {
 	private int markerOffsetX;
 	private int scrollWidth;
@@ -140,9 +143,9 @@ public class ModuleColorizer extends ModuleAddon {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id >= 0 && id < 3) {
-			setColorVal(id, data[0]);
+			setColorVal(id, reader.readByte());
 		}
 	}
 

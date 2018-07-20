@@ -25,6 +25,8 @@ import vswe.stevescarts.modules.addons.ModuleEnchants;
 import vswe.stevescarts.modules.addons.projectiles.ModuleProjectile;
 
 import javax.annotation.Nonnull;
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class ModuleShooter extends ModuleBase implements ISuppliesModule {
@@ -199,13 +201,13 @@ public class ModuleShooter extends ModuleBase implements ISuppliesModule {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
 			byte info = getActivePipes();
-			info ^= (byte) (1 << data[0]);
+			info ^= (byte) (1 << reader.readByte());
 			setActivePipes(info);
 		} else if (id == 1) {
-			byte info = data[0];
+			byte info = reader.readByte();
 			if (info < 0) {
 				info = 0;
 			} else if (info >= AInterval.length) {

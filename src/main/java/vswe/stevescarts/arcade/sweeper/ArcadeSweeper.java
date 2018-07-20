@@ -13,6 +13,9 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.realtimers.ModuleArcade;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ArcadeSweeper extends ArcadeGame {
 	private Tile[][] tiles;
 	protected boolean isPlaying;
@@ -24,7 +27,7 @@ public class ArcadeSweeper extends ArcadeGame {
 	private boolean hasStarted;
 	private int[] highscore;
 	private int highscoreTicks;
-	private static String textureMenu;
+	private static String textureMenu = "/gui/sweeper.png";
 
 	public ArcadeSweeper(final ModuleArcade module) {
 		super(module, Localization.ARCADE.CREEPER);
@@ -181,9 +184,10 @@ public class ArcadeSweeper extends ArcadeGame {
 				if (highscore[currentGameType] > ticks / 20) {
 					highscoreTicks = 1;
 					final int val = ticks / 20;
-					final byte byte1 = (byte) (val & 0xFF);
-					final byte byte2 = (byte) ((val & 0xFF00) >> 8);
-					getModule().sendPacket(3, new byte[] { (byte) currentGameType, byte1, byte2 });
+					getModule().sendPacket(3, o -> {
+						o.writeByte((byte)currentGameType);
+						o.writeInt(val);
+					});
 				}
 			} else if (result == Tile.TILE_OPEN_RESULT.BLOB) {
 				if (first) {
@@ -229,17 +233,9 @@ public class ArcadeSweeper extends ArcadeGame {
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 3) {
-			short data2 = data[1];
-			short data3 = data[2];
-			if (data2 < 0) {
-				data2 += 256;
-			}
-			if (data3 < 0) {
-				data3 += 256;
-			}
-			highscore[data[0]] = (data2 | data3 << 8);
+			highscore[reader.readByte()] = reader.readInt();
 		}
 	}
 
@@ -269,9 +265,5 @@ public class ArcadeSweeper extends ArcadeGame {
 		for (int i = 0; i < 3; ++i) {
 			highscore[i] = tagCompound.getShort(getModule().generateNBTName("HighscoreSweeper" + i, id));
 		}
-	}
-
-	static {
-		ArcadeSweeper.textureMenu = "/gui/sweeper.png";
 	}
 }

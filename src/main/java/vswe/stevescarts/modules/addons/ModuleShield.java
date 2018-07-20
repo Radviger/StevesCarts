@@ -13,6 +13,8 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.IActivatorModule;
 
+import java.io.DataInput;
+
 public class ModuleShield extends ModuleAddon implements IActivatorModule {
 	private boolean shield;
 	private float shieldDistance;
@@ -140,7 +142,7 @@ public class ModuleShield extends ModuleAddon implements IActivatorModule {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0) {
 			updateDw(STATUS, !getShieldStatus());
 		}

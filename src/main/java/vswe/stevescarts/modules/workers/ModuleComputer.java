@@ -6,6 +6,7 @@ import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.guis.buttons.*;
 
+import java.io.DataInput;
 import java.util.ArrayList;
 
 public class ModuleComputer extends ModuleWorker {
@@ -233,7 +234,7 @@ public class ModuleComputer extends ModuleWorker {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 	}
 
 	@Override

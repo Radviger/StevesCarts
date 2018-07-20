@@ -27,6 +27,8 @@ import vswe.stevescarts.helpers.storages.SCTank;
 import vswe.stevescarts.modules.storages.ModuleStorage;
 
 import javax.annotation.Nonnull;
+import java.io.DataInput;
+import java.io.IOException;
 
 public abstract class ModuleTank extends ModuleStorage implements IFluidTank, ITankHolder {
 	protected SCTank tank;
@@ -242,7 +244,7 @@ public abstract class ModuleTank extends ModuleStorage implements IFluidTank, IT
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0 && (getFluid() != null || tank.isLocked())) {
 			tank.setLocked(!tank.isLocked());
 			if (!tank.isLocked() && tank.getFluid() != null && tank.getFluid().amount <= 0) {

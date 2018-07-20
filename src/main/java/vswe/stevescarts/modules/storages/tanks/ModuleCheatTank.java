@@ -6,6 +6,9 @@ import net.minecraft.util.text.TextFormatting;
 import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.helpers.Localization;
 
+import java.io.DataInput;
+import java.io.IOException;
+
 public class ModuleCheatTank extends ModuleTank {
 	private static final TextFormatting[] colors = new TextFormatting[] { TextFormatting.YELLOW, TextFormatting.GREEN, TextFormatting.RED, TextFormatting.GOLD };
 	private int mode;
@@ -35,17 +38,16 @@ public class ModuleCheatTank extends ModuleTank {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
-		if (id == 0 && (data[0] & 0x1) != 0x0) {
-			if (mode != 0 && (data[0] & 0x2) != 0x0) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
+		int m = reader.readByte();
+		if (id == 0 && (m & 0x1) != 0x0) {
+			if (mode != 0 && (m & 0x2) != 0x0) {
 				mode = 0;
 			} else if (++mode == ModuleCheatTank.colors.length) {
 				mode = 1;
 			}
 			updateAmount();
 			updateDw();
-		} else {
-			super.receivePacket(id, data, player);
 		}
 	}
 

@@ -7,7 +7,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import reborncore.common.network.NetworkManager;
+import vswe.stevescarts.StevesCarts;
 import vswe.stevescarts.blocks.tileentities.TileEntityUpgrade;
 import vswe.stevescarts.containers.ContainerUpgrade;
 import vswe.stevescarts.containers.slots.SlotLiquidOutput;
@@ -15,7 +15,7 @@ import vswe.stevescarts.containers.slots.SlotLiquidUpgradeInput;
 import vswe.stevescarts.guis.GuiUpgrade;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.helpers.storages.SCTank;
-import vswe.stevescarts.packet.PacketFluidSync;
+import vswe.stevescarts.network.message.MessageFluidSync;
 
 public abstract class TankEffect extends InventoryEffect {
 	private static final int tankInterfaceX = 35;
@@ -87,7 +87,7 @@ public abstract class TankEffect extends InventoryEffect {
 				upgrade.updateGuiData(con, crafting, amount2, upgrade.getShortFromInt(false, upgrade.tank.getFluid().amount));
 				changed = true;
 			} else {
-				NetworkManager.sendToWorld(new PacketFluidSync(upgrade.tank.getFluid(), upgrade.getPos(), upgrade.getWorld().provider.getDimension(), 0), upgrade.getWorld());
+				StevesCarts.NET.sendToDimension(new MessageFluidSync(upgrade.tank.getFluid(), upgrade.getPos(), upgrade.getWorld().provider.getDimension(), 0), upgrade.getWorld().provider.getDimension());
 				if (oldfluid.amount != upgrade.tank.getFluid().amount) {
 					upgrade.updateGuiData(con, crafting, amount1, upgrade.getShortFromInt(true, upgrade.tank.getFluid().amount));
 					upgrade.updateGuiData(con, crafting, amount2, upgrade.getShortFromInt(false, upgrade.tank.getFluid().amount));

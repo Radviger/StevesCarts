@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
@@ -19,7 +20,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
-import reborncore.client.RenderUtil;
 import vswe.stevescarts.modules.data.ModuleData;
 
 import java.io.IOException;
@@ -277,7 +277,7 @@ public abstract class GuiBase extends GuiContainer {
 		RenderItem itemRenderer = Minecraft.getMinecraft().getRenderItem();
 		IBakedModel bakedModel = itemRenderer.getItemModelWithOverrides(icon.getItemStack(), null, Minecraft.getMinecraft().player);
 
-		RenderUtil.bindBlockTexture();
+		this.mc.renderEngine.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 		List<BakedQuad> quads = new LinkedList<>();
 		for (EnumFacing enumfacing : EnumFacing.values())
 		{

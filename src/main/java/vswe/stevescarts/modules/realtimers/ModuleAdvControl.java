@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.RenderItem;
+import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
@@ -21,10 +22,13 @@ import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ILeverModule;
 import vswe.stevescarts.modules.ModuleBase;
 import vswe.stevescarts.modules.engines.ModuleEngine;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageStevesCarts;
+
+import java.io.DataInput;
+import java.io.IOException;
 
 public class ModuleAdvControl extends ModuleBase implements ILeverModule {
-	private byte[] engineInformation;
+	private int upperBarLength = -1, lowerBarLength = -1;
 	private int tripPacketTimer;
 	private int enginePacketTimer;
 	private byte keyinformation;
@@ -69,11 +73,9 @@ public class ModuleAdvControl extends ModuleBase implements ILeverModule {
 	@Override
 	public void renderOverlay(final Minecraft minecraft) {
 		ResourceHelper.bindResource("/gui/drive.png");
-		if (engineInformation != null) {
+		if (upperBarLength != -1 && lowerBarLength != -1) {
 			for (int i = 0; i < getCart().getEngines().size(); ++i) {
 				drawImage(5, i * 15, 0, 0, 66, 15);
-				final int upperBarLength = engineInformation[i * 2] & 0x3F;
-				final int lowerBarLength = engineInformation[i * 2 + 1] & 0x3F;
 				final ModuleEngine engine = getCart().getEngines().get(i);
 				final float[] rgb = engine.getGuiBarColor();
 				GlStateManager.color(rgb[0], rgb[1], rgb[2], 1.0f);
@@ -127,21 +129,21 @@ public class ModuleAdvControl extends ModuleBase implements ILeverModule {
 			val = 100;
 		}
 		final double d = Math.round(dist * val) / val;
-		String s;
+		StringBuilder s;
 		if (d == (int) d) {
-			s = String.valueOf((int) d);
+			s = new StringBuilder(String.valueOf((int) d));
 		} else {
-			s = String.valueOf(d);
+			s = new StringBuilder(String.valueOf(d));
 		}
-		while (s.length() < ((s.indexOf(46) != -1) ? 4 : 3)) {
-			if (s.indexOf(46) != -1) {
-				s += "0";
+		while (s.length() < ((s.toString().indexOf(46) != -1) ? 4 : 3)) {
+			if (s.toString().indexOf(46) != -1) {
+				s.append("0");
 			} else {
-				s += ".0";
+				s.append(".0");
 			}
 		}
-		s += Localization.MODULES.ATTACHMENTS.DISTANCES.translate(String.valueOf(i));
-		return s;
+		s.append(Localization.MODULES.ATTACHMENTS.DISTANCES.translate(String.valueOf(i)));
+		return s.toString();
 	}
 
 	@Override
@@ -159,31 +161,18 @@ public class ModuleAdvControl extends ModuleBase implements ILeverModule {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
 		if (id == 0) {
-			engineInformation = data;
+			upperBarLength = reader.readInt();
+			lowerBarLength = reader.readInt();
 		} else if (id == 1) {
 			if (getCart().getCartRider() != null && getCart().getCartRider() instanceof EntityPlayer && getCart().getCartRider() == player) {
-				keyinformation = data[0];
+				keyinformation = reader.readByte();
 				getCart().resetRailDirection();
 			}
 		} else if (id == 2) {
-			int intOdo = 0;
-			int intTrip = 0;
-			for (int i = 0; i < 4; ++i) {
-				int temp = data[i];
-				if (temp < 0) {
-					temp += 256;
-				}
-				intOdo |= temp << i * 8;
-				temp = data[i + 4];
-				if (temp < 0) {
-					temp += 256;
-				}
-				intTrip |= temp << i * 8;
-			}
-			odo = intOdo;
-			trip = intTrip;
+			odo = reader.readInt();
+			trip = reader.readInt();
 		} else if (id == 3) {
 			trip = 0.0;
 			tripPacketTimer = 0;
@@ -285,16 +274,17 @@ public class ModuleAdvControl extends ModuleBase implements ILeverModule {
 	private void encodeKeys() {
 		if (getCart().getCartRider() != null && getCart().getCartRider() instanceof EntityPlayer && getCart().getCartRider() == getClientPlayer()) {
 			final Minecraft minecraft = Minecraft.getMinecraft();
-			final byte oldVal = keyinformation;
+            GameSettings settings = minecraft.gameSettings;
+            final byte oldVal = keyinformation;
 			keyinformation = 0;
-			keyinformation |= (byte) ((minecraft.gameSettings.keyBindForward.isKeyDown() ? 1 : 0) << 0);
-			keyinformation |= (byte) ((minecraft.gameSettings.keyBindLeft.isKeyDown() ? 1 : 0) << 1);
-			keyinformation |= (byte) ((minecraft.gameSettings.keyBindRight.isKeyDown() ? 1 : 0) << 2);
-			keyinformation |= (byte) ((minecraft.gameSettings.keyBindBack.isKeyDown() ? 1 : 0) << 3);
-			keyinformation |= (byte) ((minecraft.gameSettings.keyBindJump.isKeyDown() ? 1 : 0) << 4);
-			keyinformation |= (byte) ((minecraft.gameSettings.keyBindSprint.isKeyDown() ? 1 : 0) << 5);
+			keyinformation |= (byte) ((settings.keyBindForward.isKeyDown() ? 1 : 0) << 0);
+			keyinformation |= (byte) ((settings.keyBindLeft.isKeyDown() ? 1 : 0) << 1);
+			keyinformation |= (byte) ((settings.keyBindRight.isKeyDown() ? 1 : 0) << 2);
+			keyinformation |= (byte) ((settings.keyBindBack.isKeyDown() ? 1 : 0) << 3);
+			keyinformation |= (byte) ((settings.keyBindJump.isKeyDown() ? 1 : 0) << 4);
+			keyinformation |= (byte) ((settings.keyBindSprint.isKeyDown() ? 1 : 0) << 5);
 			if (oldVal != keyinformation) {
-				PacketStevesCarts.sendPacket(getCart(), 1 + getPacketStart(), new byte[] { keyinformation });
+				MessageStevesCarts.sendPacket(getCart(), 1 + getPacketStart(), o -> o.writeByte(keyinformation));
 			}
 		}
 	}
@@ -324,34 +314,30 @@ public class ModuleAdvControl extends ModuleBase implements ILeverModule {
 	}
 
 	private void sendTripPacket(final EntityPlayer player) {
-		final byte[] data = new byte[8];
 		final int intOdo = (int) odo;
 		final int intTrip = (int) trip;
-		for (int i = 0; i < 4; ++i) {
-			data[i] = (byte) ((intOdo & 255 << i * 8) >> i * 8);
-			data[i + 4] = (byte) ((intTrip & 255 << i * 8) >> i * 8);
-		}
-		sendPacket(2, data, player);
+		sendPacket(2, o -> {
+			o.writeInt(intOdo);
+			o.writeInt(intTrip);
+		}, player);
 	}
 
 	private void sendEnginePacket(final EntityPlayer player) {
-		final int engineCount = getCart().getEngines().size();
-		final byte[] data = new byte[engineCount * 2];
-		for (int i = 0; i < getCart().getEngines().size(); ++i) {
-			final ModuleEngine engine = getCart().getEngines().get(i);
-			final int totalfuel = engine.getTotalFuel();
-			final int fuelInTopBar = 20000;
-			final int maxBarLength = 62;
-			final float percentage = totalfuel % fuelInTopBar / fuelInTopBar;
-			final int upperBarLength = (int) (maxBarLength * percentage);
-			int lowerBarLength = totalfuel / fuelInTopBar;
-			if (lowerBarLength > maxBarLength) {
-				lowerBarLength = maxBarLength;
+		sendPacket(0, o -> {
+			for (ModuleEngine engine : getCart().getEngines()) {
+				final int totalFuel = engine.getTotalFuel();
+				final int fuelInTopBar = 20000;
+				final int maxBarLength = 62;
+				final float percentage = totalFuel % fuelInTopBar / fuelInTopBar;
+				final int upperBarLength = (int) (maxBarLength * percentage);
+				int lowerBarLength = totalFuel / fuelInTopBar;
+				if (lowerBarLength > maxBarLength) {
+					lowerBarLength = maxBarLength;
+				}
+				o.writeInt(upperBarLength);
+				o.writeInt(lowerBarLength);
 			}
-			data[i * 2] = (byte) (upperBarLength & 0x3F);
-			data[i * 2 + 1] = (byte) (lowerBarLength & 0x3F);
-		}
-		sendPacket(0, data, player);
+		}, player);
 	}
 
 	@Override

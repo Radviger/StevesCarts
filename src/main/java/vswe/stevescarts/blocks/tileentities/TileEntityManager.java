@@ -13,14 +13,18 @@ import net.minecraft.util.NonNullList;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.wrapper.InvWrapper;
+import vswe.stevescarts.api.util.CheckedConsumer;
 import vswe.stevescarts.containers.ContainerManager;
 import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.helpers.NBTHelper;
 import vswe.stevescarts.helpers.storages.TransferManager;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageStevesCarts;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 public abstract class TileEntityManager extends TileEntityBase implements IInventory {
 	private TransferManager standardTransferHandler;
@@ -231,87 +235,88 @@ public abstract class TileEntityManager extends TileEntityBase implements IInven
 	}
 
 	public void sendPacket(final int id) {
-		sendPacket(id, new byte[0]);
+		sendPacket(id, o -> o.writeByte(0));
 	}
 
 	public void sendPacket(final int id, final byte data) {
-		sendPacket(id, new byte[] { data });
+		sendPacket(id, o -> o.writeByte(data));
 	}
 
-	public void sendPacket(final int id, final byte[] data) {
-		PacketStevesCarts.sendPacket(id, data);
+	public void sendPacket(final int id, final CheckedConsumer<DataOutput, IOException> writer) {
+		MessageStevesCarts.sendPacket(id, writer);
 	}
 
 	@Override
-	public void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
-		if (id == 0) {
-			final int railID = data[0];
-			toCart[railID] = !toCart[railID];
-			if (color[railID] - 1 == getSide()) {
-				reset();
-			}
-		} else if (id == 4) {
-			final int railID = data[0];
-			if (color[railID] != 5) {
-				doReturn[color[railID] - 1] = !doReturn[color[railID] - 1];
-			}
-		} else if (id == 5) {
-			final int difference = data[0];
-			layoutType += difference;
-			if (layoutType > 2) {
-				layoutType = 0;
-			} else if (layoutType < 0) {
-				layoutType = 2;
-			}
-			reset();
-		} else {
-			final byte railsAndDifferenceCombined = data[0];
-			final int railID2 = railsAndDifferenceCombined & 0x3;
-			final int k = (railsAndDifferenceCombined & 0x4) >> 2;
-			int difference2;
-			if (k == 0) {
-				difference2 = 1;
-			} else {
-				difference2 = -1;
-			}
-			if (id == 2) {
-				final int[] amount = this.amount;
-				final int n = railID2;
-				amount[n] += difference2;
-				if (this.amount[railID2] >= getAmountCount()) {
-					this.amount[railID2] = 0;
-				} else if (this.amount[railID2] < 0) {
-					this.amount[railID2] = getAmountCount() - 1;
-				}
-				if (color[railID2] - 1 == getSide()) {
+	public void receivePacket(final int id, final DataInput reader, final EntityPlayer player) throws IOException {
+		switch (id) {
+			case 0: {
+				final int railID = reader.readByte();
+				toCart[railID] = !toCart[railID];
+				if (color[railID] - 1 == getSide()) {
 					reset();
 				}
-			} else if (id == 3) {
-				if (color[railID2] != 5) {
-					boolean willStillExist = false;
-					for (int side = 0; side < 4; ++side) {
-						if (side != railID2 && color[railID2] == color[side]) {
-							willStillExist = true;
-							break;
+				break;
+			}
+			case 4: {
+				final int railID = reader.readByte();
+				if (color[railID] != 5) {
+					doReturn[color[railID] - 1] = !doReturn[color[railID] - 1];
+				}
+				break;
+			}
+			case 5:
+				final int difference = reader.readByte();
+				layoutType += difference;
+				if (layoutType > 2) {
+					layoutType = 0;
+				} else if (layoutType < 0) {
+					layoutType = 2;
+				}
+				reset();
+				break;
+			default: {
+				final byte railsAndDifferenceCombined = reader.readByte();
+				final int railID = railsAndDifferenceCombined & 0x3;
+				final int k = (railsAndDifferenceCombined & 0x4) >> 2;
+				int difference2 = k == 0 ? 1 : -1;
+				if (id == 2) {
+					final int[] amount = this.amount;
+					amount[railID] += difference2;
+					if (this.amount[railID] >= getAmountCount()) {
+						this.amount[railID] = 0;
+					} else if (this.amount[railID] < 0) {
+						this.amount[railID] = getAmountCount() - 1;
+					}
+					if (color[railID] - 1 == getSide()) {
+						reset();
+					}
+				} else if (id == 3) {
+					if (color[railID] != 5) {
+						boolean willStillExist = false;
+						for (int side = 0; side < 4; ++side) {
+							if (side != railID && color[railID] == color[side]) {
+								willStillExist = true;
+								break;
+							}
+						}
+						if (!willStillExist) {
+							doReturn[color[railID] - 1] = false;
 						}
 					}
-					if (!willStillExist) {
-						doReturn[color[railID2] - 1] = false;
+					final int[] color = this.color;
+					color[railID] += difference2;
+					if (this.color[railID] > 5) {
+						this.color[railID] = 1;
+					} else if (this.color[railID] < 1) {
+						this.color[railID] = 5;
 					}
+					if (this.color[railID] - 1 == getSide()) {
+						reset();
+					}
+				} else {
+					receiveClickData(id, railID, difference2);
 				}
-				final int[] color = this.color;
-				final int n2 = railID2;
-				color[n2] += difference2;
-				if (this.color[railID2] > 5) {
-					this.color[railID2] = 1;
-				} else if (this.color[railID2] < 1) {
-					this.color[railID2] = 5;
-				}
-				if (this.color[railID2] - 1 == getSide()) {
-					reset();
-				}
-			} else {
-				receiveClickData(id, railID2, difference2);
+				break;
 			}
 		}
 	}

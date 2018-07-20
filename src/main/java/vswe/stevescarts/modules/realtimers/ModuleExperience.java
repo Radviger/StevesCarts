@@ -11,6 +11,7 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ModuleBase;
 
+import java.io.DataInput;
 import java.util.List;
 
 public class ModuleExperience extends ModuleBase {
@@ -133,7 +134,7 @@ public class ModuleExperience extends ModuleBase {
 	}
 
 	@Override
-	protected void receivePacket(final int id, final byte[] data, final EntityPlayer player) {
+	protected void receivePacket(final int id, final DataInput reader, final EntityPlayer player) {
 		if (id == 0) {
 			player.addExperience(Math.min(experienceAmount, 50));
 			experienceAmount -= Math.min(experienceAmount, 50);

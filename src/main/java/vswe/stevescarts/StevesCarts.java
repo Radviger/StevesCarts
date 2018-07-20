@@ -13,13 +13,12 @@ import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.oredict.OreDictionary;
 import org.apache.logging.log4j.Logger;
-import reborncore.common.network.RegisterPacketEvent;
 import vswe.stevescarts.blocks.ModBlocks;
 import vswe.stevescarts.blocks.tileentities.TileEntityCargo;
 import vswe.stevescarts.entitys.CartDataSerializers;
@@ -34,15 +33,15 @@ import vswe.stevescarts.helpers.CreativeTabSC2;
 import vswe.stevescarts.helpers.GiftItem;
 import vswe.stevescarts.items.ModItems;
 import vswe.stevescarts.modules.data.ModuleData;
-import vswe.stevescarts.packet.PacketFluidSync;
-import vswe.stevescarts.packet.PacketReturnCart;
-import vswe.stevescarts.packet.PacketStevesCarts;
+import vswe.stevescarts.network.message.MessageFluidSync;
+import vswe.stevescarts.network.message.MessageReturnCart;
+import vswe.stevescarts.network.message.MessageStevesCarts;
 import vswe.stevescarts.plugins.PluginLoader;
 import vswe.stevescarts.upgrades.AssemblerUpgrade;
 
 import java.util.function.BooleanSupplier;
 
-@Mod(modid = Constants.MOD_ID, name = Constants.NAME, version = Constants.VERSION, dependencies = "required-after:reborncore;required-after:forge@[14.21.0.2373,);", acceptedMinecraftVersions = "[1.12,1.12.2]")
+@Mod(modid = Constants.MOD_ID, name = Constants.NAME, version = Constants.VERSION, dependencies = "required-after:forge@[14.21.0.2373,);", acceptedMinecraftVersions = "[1.12,1.12.2]")
 public class StevesCarts {
 
 	@SidedProxy(clientSide = "vswe.stevescarts.ClientProxy", serverSide = "vswe.stevescarts.CommonProxy")
@@ -54,6 +53,8 @@ public class StevesCarts {
 	public static CreativeTabSC2 tabsSC2;
 	public static CreativeTabSC2 tabsSC2Components;
 	public static CreativeTabSC2 tabsSC2Blocks;
+
+	public static SimpleNetworkWrapper NET;
 
 	public static Logger logger;
 	public TradeHandler tradeHandler;
@@ -93,6 +94,12 @@ public class StevesCarts {
 
 		GiftItem.init();
 		NetworkRegistry.INSTANCE.registerGuiHandler(StevesCarts.instance, StevesCarts.proxy);
+		NET = NetworkRegistry.INSTANCE.newSimpleChannel(Constants.MOD_ID);
+		NET.registerMessage(MessageStevesCarts.Handler.class, MessageStevesCarts.class, 0, Side.CLIENT);
+		NET.registerMessage(MessageStevesCarts.Handler.class, MessageStevesCarts.class, 1, Side.SERVER);
+		NET.registerMessage(MessageFluidSync.Handler.class, MessageFluidSync.class, 2, Side.CLIENT);
+		NET.registerMessage(MessageReturnCart.Handler.class, MessageReturnCart.class, 3, Side.SERVER);
+
 		StevesCarts.proxy.init();
 
 		StevesCarts.tabsSC2.setIcon(ModuleData.getList().get((byte)39).getItemStack());
@@ -122,14 +129,6 @@ public class StevesCarts {
 		OreDictionary.registerOre("fenceWood", Blocks.JUNGLE_FENCE);
 		OreDictionary.registerOre("fenceWood", Blocks.DARK_OAK_FENCE);
 		OreDictionary.registerOre("fenceWood", Blocks.ACACIA_FENCE);
-	}
-
-	@SubscribeEvent
-	public void registerPackets(RegisterPacketEvent event){
-		event.registerPacket(PacketStevesCarts.class, Side.CLIENT);
-		event.registerPacket(PacketStevesCarts.class, Side.SERVER);
-		event.registerPacket(PacketFluidSync.class, Side.CLIENT);
-		event.registerPacket(PacketReturnCart.class, Side.SERVER);
 	}
 
 	static {
