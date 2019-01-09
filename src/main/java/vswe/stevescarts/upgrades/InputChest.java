@@ -15,7 +15,7 @@ import vswe.stevescarts.modules.data.ModuleData;
 import vswe.stevescarts.modules.data.ModuleDataHull;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
+import java.util.List;
 
 public class InputChest extends SimpleInventoryEffect {
 	public InputChest(final int inventoryWidth, final int inventoryHeight) {
@@ -75,7 +75,7 @@ public class InputChest extends SimpleInventoryEffect {
 		if (hull == null) {
 			return false;
 		}
-		final ArrayList<ModuleData> modules = assembler.getNonHullModules();
+		final List<ModuleData> modules = assembler.getNonHullModules();
 		modules.add(module);
 		return ModuleData.checkForErrors(hull, modules) != null;
 	}

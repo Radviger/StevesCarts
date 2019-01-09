@@ -35,20 +35,21 @@ public class ModuleHydrater extends ModuleWorker {
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		World world = getCart().world;
 		BlockPos next = getNextblock();
 		for (int i = -range; i <= range; ++i) {
 			for (int j = -range; j <= range; ++j) {
-				if (hydrate(world, next.add(i, -1, j))) {
-					return true;
+				WorkResult r = hydrate(world, next.add(i, -1, j));
+				if (r != WorkResult.SKIP) {
+					return r;
 				}
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
-	private boolean hydrate(World world, BlockPos pos) {
+	private WorkResult hydrate(World world, BlockPos pos) {
 		IBlockState state = world.getBlockState(pos);
 		if (state.getBlock() == Blocks.FARMLAND) {
 			int moisture = state.getValue(BlockFarmland.MOISTURE);
@@ -58,7 +59,7 @@ public class ModuleHydrater extends ModuleWorker {
 				if (waterCost > 0) {
 					if (doPreWork()) {
 						startWorking(2 + waterCost);
-						return true;
+						return WorkResult.SUCCESS;
 					}
 					stopWorking();
 					getCart().drain(FluidRegistry.WATER, waterCost, true);
@@ -66,6 +67,6 @@ public class ModuleHydrater extends ModuleWorker {
 				}
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 }

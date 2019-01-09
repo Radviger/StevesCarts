@@ -8,6 +8,7 @@ import vswe.stevescarts.helpers.Localization;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TrackLevel {
 	public static final TrackLevel editor;
@@ -18,16 +19,16 @@ public class TrackLevel {
 	private TrackOrientation.DIRECTION playerDir;
 	private int itemX;
 	private int itemY;
-	private ArrayList<Track> tracks;
-	private ArrayList<LevelMessage> messages;
+	private List<Track> tracks;
+	private List<LevelMessage> messages;
 
 	private static byte getFileVersion() {
 		return 0;
 	}
 
 	@SideOnly(Side.CLIENT)
-	public static ArrayList<TrackLevel> loadMapsFromFolder() {
-		final ArrayList<TrackLevel> maps = new ArrayList<>();
+	public static List<TrackLevel> loadMapsFromFolder() {
+		final List<TrackLevel> maps = new ArrayList<>();
 		try {
 			final File dir = new File(Minecraft.getMinecraft().mcDataDir, TrackLevel.MAP_FOLDER_PATH);
 			final File[] children = dir.listFiles();
@@ -106,7 +107,7 @@ public class TrackLevel {
 	                              final TrackOrientation.DIRECTION playerDir,
 	                              final int itemX,
 	                              final int itemY,
-	                              final ArrayList<Track> tracks) {
+	                              final List<Track> tracks) {
 		try {
 			final byte[] bytes = saveMapData(name, playerX, playerY, playerDir, itemX, itemY, tracks);
 			writeToFile(new File(Minecraft.getMinecraft().mcDataDir, "sc2/arcade/trackoperator/" + name.replace(" ", "_") + ".dat"), bytes);
@@ -123,7 +124,7 @@ public class TrackLevel {
 	                                     final TrackOrientation.DIRECTION playerDir,
 	                                     final int itemX,
 	                                     final int itemY,
-	                                     final ArrayList<Track> tracks) {
+	                                     final List<Track> tracks) {
 		try {
 			final byte[] bytes = saveMapData(name, playerX, playerY, playerDir, itemX, itemY, tracks);
 			String str = "TrackLevel.loadMap(new byte[] {";
@@ -147,7 +148,7 @@ public class TrackLevel {
 	                                 final TrackOrientation.DIRECTION playerDir,
 	                                 final int itemX,
 	                                 final int itemY,
-	                                 final ArrayList<Track> tracks) throws IOException {
+	                                 final List<Track> tracks) throws IOException {
 		final ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		final DataOutputStream data = new DataOutputStream(stream);
 		data.writeByte(getFileVersion());
@@ -246,11 +247,11 @@ public class TrackLevel {
 		return itemY;
 	}
 
-	public ArrayList<Track> getTracks() {
+	public List<Track> getTracks() {
 		return tracks;
 	}
 
-	public ArrayList<LevelMessage> getMessages() {
+	public List<LevelMessage> getMessages() {
 		return messages;
 	}
 

@@ -16,6 +16,8 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import vswe.stevescarts.SCConfig;
@@ -76,18 +78,18 @@ public abstract class ModuleDrill extends ModuleTool implements IActivatorModule
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		World world = getCart().world;
 		if (!isDrillEnabled()) {
 			stopDrill();
 			stopWorking();
-			return false;
+			return WorkResult.SKIP;
 		} else if (!doPreWork()) {
 			stopDrill();
 			stopWorking();
 		}
 		if (isBroken()) {
-			return false;
+			return WorkResult.SKIP;
 		}
 		BlockPos next = getNextblock();
 		int[] range = mineRange();
@@ -95,19 +97,23 @@ public abstract class ModuleDrill extends ModuleTool implements IActivatorModule
 			for (int holeX = -blocksOnSide(); holeX <= blocksOnSide(); holeX++) {
 				if (isMiningSpotAllowed(next, holeX, holeY, range)) {
 					BlockPos mine = next.add(((getCart().z() != next.getZ()) ? holeX : 0), holeY, ((getCart().x() != next.getX()) ? holeX : 0));
-					if (mineBlockAndRevive(world, mine, next, holeX, holeY)) {
-						return true;
+					WorkResult m = mineBlockAndRevive(world, mine, next, holeX, holeY);
+					if (m != WorkResult.SKIP) {
+						return m;
 					}
 				}
 			}
 		}
 		BlockPos pos = next.add(0, range[0], 0);
-		if (countsAsAir(pos) && !isValidForTrack(pos, true) && mineBlockAndRevive(world, pos.down(), next, 0, range[0] - 1)) {
-			return true;
+		if (countsAsAir(pos) && !isValidForTrack(pos, true)) {
+			WorkResult m = mineBlockAndRevive(world, pos.down(), next, 0, range[0] - 1);
+			if (m != WorkResult.SKIP) {
+				return m;
+			}
 		}
 		stopWorking();
 		stopDrill();
-		return false;
+		return WorkResult.SKIP;
 	}
 
 	private boolean isMiningSpotAllowed(BlockPos next, int holeX, int holeY, int[] range) {
@@ -145,115 +151,119 @@ public abstract class ModuleDrill extends ModuleTool implements IActivatorModule
 		return blocksOnTop();
 	}
 
-	private boolean mineBlockAndRevive(World world, BlockPos coord, BlockPos next, final int holeX, final int holeY) {
-		if (mineBlock(world, coord, next, holeX, holeY, false)) {
-			return true;
+	private WorkResult mineBlockAndRevive(World world, BlockPos coord, BlockPos next, final int holeX, final int holeY) {
+		WorkResult m = mineBlock(world, coord, next, holeX, holeY, false);
+		if (m != WorkResult.SKIP) {
+			return m;
 		} else if (isDead()) {
 			revive();
-			return true;
+			return WorkResult.SUCCESS;
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
-	protected boolean mineBlock(World world, BlockPos coord, BlockPos next, final int holeX, final int holeY, final boolean flag) {
+	protected WorkResult mineBlock(World world, BlockPos pos, BlockPos next, final int holeX, final int holeY, final boolean flag) {
 		if (tracker != null) {
-			final BlockPos target = tracker.findBlockToMine(this, coord);
+			final BlockPos target = tracker.findBlockToMine(this, pos);
 			if (target != null) {
-				coord = target;
+				pos = target;
 			}
 		}
-		final Object valid = isValidBlock(world, coord, holeX, holeY, flag);
+		final Object valid = isValidBlock(world, pos, holeX, holeY, flag);
 		TileEntity storage = null;
 		if (valid instanceof TileEntity) {
 			storage = (TileEntity) valid;
 		} else if (valid == null) {
-			return false;
+			return WorkResult.SKIP;
 		}
-		IBlockState blockState = world.getBlockState(coord);
-		final Block block = blockState.getBlock();
-		float h = blockState.getBlockHardness(world, coord);
-		if (h < 0.0f) {
-			h = 0.0f;
-		}
-		//TODO change to capabilities
-		if (storage != null) {
-			for (int i = 0; i < ((IInventory) storage).getSizeInventory(); ++i) {
-				ItemStack iStack = ((IInventory) storage).getStackInSlot(i);
-				if (!iStack.isEmpty()) {
-					if (!minedItem(world, iStack, next)) {
-						return false;
+		IBlockState state = world.getBlockState(pos);
+		BlockEvent e = new BlockEvent.BreakEvent(world, pos, state, getCartOwner());
+		if (!MinecraftForge.EVENT_BUS.post(e)) {
+			final Block block = state.getBlock();
+			float h = state.getBlockHardness(world, pos);
+			if (h < 0.0f) {
+				h = 0.0f;
+			}
+			//TODO change to capabilities
+			if (storage != null) {
+				for (int i = 0; i < ((IInventory) storage).getSizeInventory(); ++i) {
+					ItemStack stack = ((IInventory) storage).getStackInSlot(i);
+					if (!stack.isEmpty()) {
+						if (!minedItem(world, stack, next)) {
+							return WorkResult.SKIP;
+						}
+						((IInventory) storage).setInventorySlotContents(i, ItemStack.EMPTY);
 					}
-					((IInventory) storage).setInventorySlotContents(i, ItemStack.EMPTY);
 				}
 			}
-		}
-		final int fortune = (enchanter != null) ? enchanter.getFortuneLevel() : 0;
-		if (shouldSilkTouch(blockState, coord)) {
-			ItemStack item = getSilkTouchedItem(blockState);
-			if (!item.isEmpty() && !minedItem(world, item, next)) {
-				return false;
-			}
-			world.setBlockToAir(coord);
-		} else if (block.getDrops(world, coord, blockState, fortune).size() != 0) {
-			List<ItemStack> stacks = block.getDrops(world, coord, blockState, fortune);
+			final int fortune = (enchanter != null) ? enchanter.getFortuneLevel() : 0;
 			boolean shouldRemove = false;
-			for (int j = 0; j < stacks.size(); ++j) {
-				if (!minedItem(world, stacks.get(j), next)) {
-					return false;
+			if (shouldSilkTouch(state, pos)) {
+				ItemStack item = getSilkTouchedItem(state);
+				if (!item.isEmpty() && !minedItem(world, item, next)) {
+					return WorkResult.SKIP;
 				}
-				shouldRemove = true;
+			} else if (block.getDrops(world, pos, state, fortune).size() != 0) {
+				List<ItemStack> stacks = block.getDrops(world, pos, state, fortune);
+				shouldRemove = false;
+				for (ItemStack stack : stacks) {
+					if (!minedItem(world, stack, next)) {
+						return WorkResult.SKIP;
+					}
+					shouldRemove = true;
+				}
 			}
 			if (shouldRemove) {
-				world.setBlockToAir(coord);
+				world.playEvent(2001, pos, Block.getStateId(state));
+				world.setBlockToAir(pos);
 			}
+			damageTool(1 + (int) h);
+			startWorking(getTimeToMine(h));
+			startDrill();
+			return WorkResult.SUCCESS;
 		} else {
-			world.setBlockToAir(coord);
+			return WorkResult.FAILURE;
 		}
-		damageTool(1 + (int) h);
-		startWorking(getTimeToMine(h));
-		startDrill();
-		return true;
 	}
 
-	protected boolean minedItem(World world, @Nonnull ItemStack iStack, BlockPos Coords) {
-		if (iStack.isEmpty() || iStack.getCount() <= 0) {
+	protected boolean minedItem(World world, @Nonnull ItemStack stack, BlockPos pos) {
+		if (stack.isEmpty() || stack.getCount() <= 0) {
 			return true;
 		}
 		for (ModuleBase module : getCart().getModules()) {
 			if (module instanceof ModuleIncinerator) {
-				((ModuleIncinerator) module).incinerate(iStack);
-				if (iStack.getCount() <= 0) {
+				((ModuleIncinerator) module).incinerate(stack);
+				if (stack.getCount() <= 0) {
 					return true;
 				}
-				continue;
 			}
 		}
-		int size = iStack.getCount();
-		getCart().addItemToChest(iStack);
-		if (iStack.getCount() == 0) {
+		int size = stack.getCount();
+		getCart().addItemToChest(stack);
+		if (stack.getCount() == 0) {
 			return true;
 		}
 		boolean hasChest = false;
-		for (ModuleBase module2 : getCart().getModules()) {
-			if (module2 instanceof ModuleChest) {
+		for (ModuleBase m : getCart().getModules()) {
+			if (m instanceof ModuleChest) {
 				hasChest = true;
 				break;
 			}
 		}
 		if (!hasChest) {
-			final EntityItem entityitem = new EntityItem(world, getCart().posX, getCart().posY, getCart().posZ, iStack);
-			entityitem.motionX = (getCart().x() - Coords.getX()) / 10.0f;
-			entityitem.motionY = 0.15000000596046448;
-			entityitem.motionZ = (getCart().z() - Coords.getZ()) / 10.0f;
-			world.spawnEntity(entityitem);
+			final EntityItem item = new EntityItem(world, getCart().posX, getCart().posY, getCart().posZ, stack);
+			item.motionX = (getCart().x() - pos.getX()) / 10.0f;
+			item.motionY = 0.15000000596046448;
+			item.motionZ = (getCart().z() - pos.getZ()) / 10.0f;
+			world.spawnEntity(item);
 			return true;
 		}
-		if (iStack.getCount() != size) {
-			final EntityItem entityitem = new EntityItem(world, getCart().posX, getCart().posY, getCart().posZ, iStack);
-			entityitem.motionX = (getCart().z() - Coords.getZ()) / 10.0f;
-			entityitem.motionY = 0.15000000596046448;
-			entityitem.motionZ = (getCart().x() - Coords.getX()) / 10.0f;
-			world.spawnEntity(entityitem);
+		if (stack.getCount() != size) {
+			final EntityItem item = new EntityItem(world, getCart().posX, getCart().posY, getCart().posZ, stack);
+			item.motionX = (getCart().z() - pos.getZ()) / 10.0f;
+			item.motionY = 0.15000000596046448;
+			item.motionZ = (getCart().x() - pos.getX()) / 10.0f;
+			world.spawnEntity(item);
 			return true;
 		}
 		return false;
@@ -272,9 +282,6 @@ public abstract class ModuleDrill extends ModuleTool implements IActivatorModule
 		}
 		IBlockState blockState = world.getBlockState(pos);
 		final Block block = blockState.getBlock();
-		if (block == null) {
-			return null;
-		}
 		if (block == Blocks.AIR) {
 			return null;
 		}
@@ -293,7 +300,7 @@ public abstract class ModuleDrill extends ModuleTool implements IActivatorModule
 		//TODO change to capabilities
 		if (block instanceof BlockContainer) {
 			final TileEntity tileentity = world.getTileEntity(pos);
-			if (IInventory.class.isInstance(tileentity)) {
+			if (tileentity instanceof IInventory) {
 				if (holeX != 0 || holeY > 0) {
 					return null;
 				}

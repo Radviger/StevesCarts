@@ -6,8 +6,13 @@ import net.minecraft.block.BlockRailBase;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
+import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.common.util.FakePlayer;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.containers.slots.SlotBridge;
 import vswe.stevescarts.entitys.EntityMinecartModular;
@@ -49,53 +54,70 @@ public class ModuleBridge extends ModuleWorker implements ISuppliesModule {
 	}
 
 	@Override
-	public boolean work() {
-		World world = getCart().world;
+	public WorkResult work() {
+		EntityMinecartModular cart = getCart();
+		World world = cart.world;
 		BlockPos next = getNextblock();
-		if (getCart().getYTarget() < next.getY()) {
+		if (cart.getYTarget() < next.getY()) {
 			next = next.down(2);
-		} else if (getCart().getYTarget() == next.getY()){
+		} else if (cart.getYTarget() == next.getY()){
 			next = next.down(1);
 		}
 		if (!BlockRailBase.isRailBlock(world, next) && !BlockRailBase.isRailBlock(world, next.down())) {
 			if (doPreWork()) {
-				if (tryBuildBridge(world, next, false)) {
+				WorkResult r = tryBuildBridge(world, next, true);
+				if (r == WorkResult.SUCCESS) {
 					startWorking(22);
 					setBridge(true);
-					return true;
+					return WorkResult.SUCCESS;
+				} else if (r == WorkResult.FAILURE) {
+					return r;
 				}
-			} else if (tryBuildBridge(world, next, true)) {
-				stopWorking();
+			} else {
+				WorkResult r = tryBuildBridge(world, next, false);
+				if (r != WorkResult.SKIP) { //TODO: SUCCESS ONLY?
+					stopWorking();
+				}
 			}
 		}
 		setBridge(false);
-		return false;
+		return WorkResult.SKIP;
 	}
 
-	private boolean tryBuildBridge(World world, BlockPos pos, final boolean flag) {
+	private WorkResult tryBuildBridge(World world, BlockPos pos, final boolean simulate) {
 		final Block b = world.getBlockState(pos).getBlock();
 		if ((countsAsAir(pos) || b instanceof BlockLiquid) && isValidForTrack(pos.up(), false)) {
+			FakePlayer player = getCartOwner();
+			EntityMinecartModular cart = getCart();
 			for (int m = 0; m < getInventorySize(); ++m) {
-				if (!getStack(m).isEmpty() && SlotBridge.isBridgeMaterial(getStack(m))) {
-					if (flag) {
-						world.setBlockState(pos, Block.getBlockFromItem(getStack(m).getItem()).getStateFromMeta(getStack(m).getItemDamage()), 3);
-						if (!getCart().hasCreativeSupplies()) {
-							@Nonnull
-							ItemStack stack = getStack(m);
-							stack.shrink(1);
-							if (getStack(m).getCount() == 0) {
-								setStack(m, ItemStack.EMPTY);
+				ItemStack stack = getStack(m);
+				if (!stack.isEmpty() && SlotBridge.isBridgeMaterial(stack)) {
+					if (!simulate) {
+						Block block = Block.getBlockFromItem(stack.getItem());
+						//IBlockState state = block.getStateFromMeta(stack.getItemDamage());
+						EnumActionResult e = ForgeHooks.onPlaceItemIntoWorld(stack, player, world, pos, EnumFacing.DOWN, 0F, 0F, 0F, EnumHand.MAIN_HAND);
+						if (e != EnumActionResult.FAIL) {
+							//world.setBlockState(pos, state);
+							if (e == EnumActionResult.SUCCESS) {
+								if (!cart.hasCreativeSupplies()) {
+									/*stack.shrink(1);
+									if (stack.getCount() == 0) {
+										setStack(l, ItemStack.EMPTY);
+									}*/
+									cart.markDirty();
+								}
 							}
-							getCart().markDirty();
+						} else {
+							return WorkResult.FAILURE;
 						}
 					}
-					return true;
+					return WorkResult.SUCCESS;
 				}
 			}
 			if (isValidForTrack(pos, true) || isValidForTrack(pos.up(), true) || !isValidForTrack(pos.up(2), true)) {
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
 	@Override

@@ -13,6 +13,7 @@ import vswe.stevescarts.helpers.BlockPosHelpers;
 import vswe.stevescarts.modules.workers.tools.ModuleDrill;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ModuleLiquidDrainer extends ModuleWorker {
 	public ModuleLiquidDrainer(final EntityMinecartModular cart) {
@@ -25,12 +26,12 @@ public class ModuleLiquidDrainer extends ModuleWorker {
 	}
 
 	@Override
-	public boolean work() {
-		return false;
+	public WorkResult work() {
+		return WorkResult.SKIP;
 	}
 
 	public void handleLiquid(final ModuleDrill drill, BlockPos pos) {
-		final ArrayList<BlockPos> checked = new ArrayList<>();
+		final List<BlockPos> checked = new ArrayList<>();
 		final int result = drainAt(getCart().world, drill, checked, pos, 0);
 		if (result > 0 && doPreWork()) {
 			drill.kill();
@@ -45,7 +46,7 @@ public class ModuleLiquidDrainer extends ModuleWorker {
 		return true;
 	}
 
-	private int drainAt(World world, final ModuleDrill drill, final ArrayList<BlockPos> checked, final BlockPos pos, int buckets) {
+	private int drainAt(World world, final ModuleDrill drill, final List<BlockPos> checked, final BlockPos pos, int buckets) {
 		int drained = 0;
 		IBlockState blockState = world.getBlockState(pos);
 		final Block b = blockState.getBlock();
@@ -56,8 +57,7 @@ public class ModuleLiquidDrainer extends ModuleWorker {
 		final FluidStack liquid = getFluidStack(b, pos, !doPreWork());
 		if (liquid != null) {
 			if (doPreWork()) {
-				final FluidStack fluidStack = liquid;
-				fluidStack.amount += buckets * 1000;
+				liquid.amount += buckets * 1000;
 			}
 			final int amount = getCart().fill(liquid, false);
 			if (amount == liquid.amount) {
@@ -93,7 +93,7 @@ public class ModuleLiquidDrainer extends ModuleWorker {
 	private boolean isLiquid(final Block b) {
 		final boolean isWater = b == Blocks.WATER || b == Blocks.FLOWING_WATER || b == Blocks.ICE;
 		final boolean isLava = b == Blocks.LAVA || b == Blocks.FLOWING_LAVA;
-		final boolean isOther = b != null && b instanceof IFluidBlock;
+		final boolean isOther = b instanceof IFluidBlock;
 		return isWater || isLava || isOther;
 	}
 

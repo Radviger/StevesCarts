@@ -1,6 +1,7 @@
 package vswe.stevescarts.helpers;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class HeightControlOre {
 	public final String name;
@@ -12,7 +13,7 @@ public class HeightControlOre {
 	public final int spanLowest;
 	public final int bestHighest;
 	public final int bestLowest;
-	public static final ArrayList<HeightControlOre> ores;
+	public static final List<HeightControlOre> ores = new ArrayList<>();
 
 	public HeightControlOre(final String name, final int textureid, final int spanHighest, final int bestHighest, final int bestLowest) {
 		this.name = name;
@@ -41,7 +42,6 @@ public class HeightControlOre {
 	}
 
 	static {
-		ores = new ArrayList<>();
 		new HeightControlOre("Diamond", 0, 15, 12, 5);
 		new HeightControlOre("Redstone", 1, 16, 13, 5);
 		new HeightControlOre("Gold", 2, 33, 30, 5);

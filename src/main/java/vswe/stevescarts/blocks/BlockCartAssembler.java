@@ -1,7 +1,10 @@
 package vswe.stevescarts.blocks;
 
+import com.mojang.authlib.GameProfile;
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.InventoryHelper;
@@ -28,14 +31,14 @@ public class BlockCartAssembler extends BlockContainerBase {
 	}
 
 	@Override
-	public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer entityplayer, EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ) {
-		if (entityplayer.isSneaking()) {
+	public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ) {
+		if (player.isSneaking()) {
 			return false;
 		}
 		final TileEntityCartAssembler assembler = (TileEntityCartAssembler) world.getTileEntity(pos);
 		if (assembler != null) {
 			if (!world.isRemote) {
-				entityplayer.openGui(StevesCarts.instance, 3, world, pos.getX(), pos.getY(), pos.getZ());
+				player.openGui(StevesCarts.instance, 3, world, pos.getX(), pos.getY(), pos.getZ());
 			}
 			return true;
 		}
@@ -69,7 +72,7 @@ public class BlockCartAssembler extends BlockContainerBase {
 		final TileEntity tile = world.getTileEntity(pos);
 		if (tile != null && tile instanceof TileEntityUpgrade) {
 			final TileEntityUpgrade upgrade = (TileEntityUpgrade) tile;
-			final ArrayList<Pair<TileEntityCartAssembler, EnumFacing>> masters = getMasters(world, pos);
+			final List<Pair<TileEntityCartAssembler, EnumFacing>> masters = getMasters(world, pos);
 			if (masters.size() == 1) {
 				Pair<TileEntityCartAssembler, EnumFacing> pair = masters.get(0);
 				TileEntityCartAssembler master = pair.first();
@@ -86,8 +89,8 @@ public class BlockCartAssembler extends BlockContainerBase {
 		return null;
 	}
 
-	private ArrayList<Pair<TileEntityCartAssembler, EnumFacing>> getMasters(final World world, final BlockPos pos) {
-		final ArrayList<Pair<TileEntityCartAssembler, EnumFacing>> masters = new ArrayList<>();
+	private List<Pair<TileEntityCartAssembler, EnumFacing>> getMasters(final World world, final BlockPos pos) {
+		final List<Pair<TileEntityCartAssembler, EnumFacing>> masters = new ArrayList<>();
 		for (EnumFacing facing: EnumFacing.VALUES) {
 			final TileEntityCartAssembler temp = getMaster(world, pos.offset(facing));
 			if (temp != null) {
@@ -142,6 +145,15 @@ public class BlockCartAssembler extends BlockContainerBase {
 	}
 
 	@Override
+	public void onBlockPlacedBy(World world, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack item) {
+		final TileEntityCartAssembler assembler = (TileEntityCartAssembler) world.getTileEntity(pos);
+		if (assembler != null && !world.isRemote) {
+			assembler.owner = placer instanceof EntityPlayer ?
+					((EntityPlayer) placer).getGameProfile() : new GameProfile(placer.getUniqueID(), null);
+		}
+	}
+
+	@Override
 	public void onBlockAdded(World worldIn, BlockPos pos, IBlockState state) {
 		super.onBlockAdded(worldIn, pos, state);
 		updateMultiBlock(worldIn, pos);
@@ -175,5 +187,4 @@ public class BlockCartAssembler extends BlockContainerBase {
 		}
 		super.breakBlock(world, pos, getDefaultState());
 	}
-
 }

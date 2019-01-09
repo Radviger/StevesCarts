@@ -15,6 +15,7 @@ import vswe.stevescarts.modules.realtimers.ModuleArcade;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ArcadeTracks extends ArcadeGame {
 	private TrackLevel currentMap;
@@ -23,7 +24,7 @@ public class ArcadeTracks extends ArcadeGame {
 	private int currentStory;
 	private int currentLevel;
 	private int[] unlockedLevels;
-	ArrayList<Cart> carts;
+	List<Cart> carts;
 	private Cart player;
 	private Cart enderman;
 	private int playerStartX;
@@ -32,16 +33,16 @@ public class ArcadeTracks extends ArcadeGame {
 	private int itemX;
 	private int itemY;
 	private boolean isItemTaken;
-	private ArrayList<Track> tracks;
+	private List<Track> tracks;
 	private Track[][] trackMap;
 	private int tick;
 	private int currentMenuTab;
-	private ArrayList<ScrollableList> lists;
+	private List<ScrollableList> lists;
 	private boolean storySelected;
 	private ScrollableList storyList;
 	private ScrollableList mapList;
 	private ScrollableList userList;
-	private ArrayList<TrackLevel> userMaps;
+	private List<TrackLevel> userMaps;
 	private boolean isUsingEditor;
 	private boolean isSaveMenuOpen;
 	private boolean failedToSave;
@@ -128,7 +129,7 @@ public class ArcadeTracks extends ArcadeGame {
 	private void loadMaps() {
 		final int story = storyList.getSelectedIndex();
 		if (story != -1) {
-			final ArrayList<TrackLevel> levels = TrackStory.stories.get(story).getLevels();
+			final List<TrackLevel> levels = TrackStory.stories.get(story).getLevels();
 			mapList.clearList();
 			for (int i = 0; i < levels.size(); ++i) {
 				if (unlockedLevels[story] >= i) {

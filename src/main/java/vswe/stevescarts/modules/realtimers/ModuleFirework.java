@@ -14,6 +14,7 @@ import vswe.stevescarts.modules.ModuleBase;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ModuleFirework extends ModuleBase {
 	private int fireCooldown;
@@ -222,14 +223,15 @@ public class ModuleFirework extends ModuleBase {
 			@Nonnull
 			ItemStack item = getStack(i);
 			if (!item.isEmpty() && item.getItem() == Items.DYE) {
-				final int[] array = maxColors;
 				final int itemDamage = item.getItemDamage();
-				array[itemDamage] += item.getCount();
+				maxColors[itemDamage] += item.getCount();
 			}
 		}
-		int colorCount;
-		for (colorCount = getCart().rand.nextInt(2) + 1; colorCount <= maxColorCount - 2 && getCart().rand.nextInt(2) == 0; colorCount += 2) {}
-		final ArrayList<Integer> colorPointers = new ArrayList<>();
+		int colorCount = getCart().rand.nextInt(2) + 1;
+		while (colorCount <= maxColorCount - 2 && getCart().rand.nextInt(2) == 0) {
+			colorCount += 2;
+		}
+		final List<Integer> colorPointers = new ArrayList<>();
 		for (int j = 0; j < 16; ++j) {
 			if (maxColors[j] > 0) {
 				colorPointers.add(j);
@@ -238,16 +240,12 @@ public class ModuleFirework extends ModuleBase {
 		if (colorPointers.size() == 0) {
 			return null;
 		}
-		final ArrayList<Integer> usedColors = new ArrayList<>();
+		final List<Integer> usedColors = new ArrayList<>();
 		while (colorCount > 0 && colorPointers.size() > 0) {
 			final int pointerId = getCart().rand.nextInt(colorPointers.size());
 			final int colorId = colorPointers.get(pointerId);
-			final int[] array2 = currentColors;
-			final int n = colorId;
-			++array2[n];
-			final int[] array3 = maxColors;
-			final int n2 = colorId;
-			if (--array3[n2] <= 0) {
+			++currentColors[colorId];
+			if (--maxColors[colorId] <= 0) {
 				colorPointers.remove(pointerId);
 			}
 			usedColors.add(colorId);
@@ -262,9 +260,8 @@ public class ModuleFirework extends ModuleBase {
 			ItemStack item2 = getStack(k);
 			if (!item2.isEmpty() && item2.getItem() == Items.DYE && currentColors[item2.getItemDamage()] > 0) {
 				final int count = Math.min(currentColors[item2.getItemDamage()], item2.getCount());
-				final int[] array4 = currentColors;
 				final int itemDamage2 = item2.getItemDamage();
-				array4[itemDamage2] -= count;
+				currentColors[itemDamage2] -= count;
 			}
 		}
 		return colors;

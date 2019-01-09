@@ -35,7 +35,7 @@ public class ModuleEnchants extends ModuleAddon {
 	}
 
 	public boolean useSilkTouch() {
-		return false;
+		return getEnchantLevel(EnchantmentInfo.silktouch) > 0;
 	}
 
 	public int getUnbreakingLevel() {

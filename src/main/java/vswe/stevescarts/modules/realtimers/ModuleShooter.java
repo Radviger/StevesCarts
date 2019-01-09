@@ -28,6 +28,7 @@ import javax.annotation.Nonnull;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ModuleShooter extends ModuleBase implements ISuppliesModule {
 	private ArrayList<ModuleProjectile> projectiles;
@@ -40,7 +41,7 @@ public class ModuleShooter extends ModuleBase implements ISuppliesModule {
 	private int[] intervalDragArea;
 	private int currentCooldownState;
 	private int dragState;
-	private final ArrayList<Integer> pipes;
+	private final List<Integer> pipes;
 	private final float[] pipeRotations;
 	private final int[] AInterval;
 	private int arrowTick;
@@ -260,7 +261,7 @@ public class ModuleShooter extends ModuleBase implements ISuppliesModule {
 	//0 (Forward Left)		, 1 (Forward)		, 2 (Forward Right)
 	//3 (Left),				, 4 (Invalid)		, 5 (Right)
 	//6 (Back Left)			, 7 (Back)			, 8 (Back Right)
-	protected void generatePipes(final ArrayList<Integer> list) {
+	protected void generatePipes(final List<Integer> list) {
 		for (int i = 0; i < 9; ++i) {
 			if (i != 4) {
 				list.add(i);

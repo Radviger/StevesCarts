@@ -5,6 +5,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import vswe.stevescarts.containers.slots.SlotBase;
@@ -19,8 +20,15 @@ import vswe.stevescarts.modules.addons.ModuleEnchants;
 import vswe.stevescarts.modules.workers.ModuleWorker;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public abstract class ModuleTool extends ModuleWorker {
+	private static final Method getSilkTouchDrop = ReflectionHelper.findMethod(Block.class, "getSilkTouchDrop", "func_180643_i", IBlockState.class);
+	static {
+		getSilkTouchDrop.setAccessible(true);
+	}
+
 	private int currentDurability;
 	private int remainingRepairUnits;
 	private int maximumRepairUnits;
@@ -252,23 +260,17 @@ public abstract class ModuleTool extends ModuleWorker {
 	}
 
 	public boolean shouldSilkTouch(IBlockState blockState, BlockPos pos) {
-		final boolean doSilkTouch = false;
-		try {
-			if (enchanter != null && enchanter.useSilkTouch() && blockState.getBlock().canSilkHarvest(getCart().world, pos, blockState, null)) {
-				return true;
-			}
-		} catch (Exception ex) {}
-		return false;
+		return enchanter != null && enchanter.useSilkTouch() && blockState.getBlock().canSilkHarvest(getCart().world, pos, blockState, getCartOwner());
 	}
 
 	@Nonnull
-	public ItemStack getSilkTouchedItem(IBlockState blockState) {
-		Block block = blockState.getBlock();
-		ItemStack stack = new ItemStack(block, 1, 0);
-		if (!stack.isEmpty() && stack.getItem().getHasSubtypes()) {
-			return new ItemStack(block, 1, block.getMetaFromState(blockState));
+	public ItemStack getSilkTouchedItem(IBlockState state) {
+		Block block = state.getBlock();
+		try {
+			return (ItemStack) getSilkTouchDrop.invoke(block, state);
+		} catch (IllegalAccessException | InvocationTargetException e) {
+			return new ItemStack(block);
 		}
-		return stack;
 	}
 
 	public int getCurrentDurability() {

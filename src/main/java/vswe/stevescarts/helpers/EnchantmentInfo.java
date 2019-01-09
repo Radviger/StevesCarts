@@ -9,6 +9,7 @@ import net.minecraft.nbt.NBTTagList;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.List;
 
 public class EnchantmentInfo {
 	private Enchantment enchantment;
@@ -22,6 +23,7 @@ public class EnchantmentInfo {
 	public static EnchantmentInfo punch;
 	public static EnchantmentInfo flame;
 	public static EnchantmentInfo infinity;
+	public static EnchantmentInfo silktouch;
 
 	public EnchantmentInfo(final Enchantment enchantment, final ENCHANTMENT_TYPE type, final int rank1Value) {
 		this.enchantment = enchantment;
@@ -46,7 +48,7 @@ public class EnchantmentInfo {
 		return (int) Math.pow(2.0, level - 1) * rank1Value;
 	}
 
-	public static boolean isItemValid(final ArrayList<ENCHANTMENT_TYPE> enabledTypes, @Nonnull ItemStack itemstack) {
+	public static boolean isItemValid(final List<ENCHANTMENT_TYPE> enabledTypes, @Nonnull ItemStack itemstack) {
 		if (!itemstack.isEmpty() && itemstack.getItem() == Items.ENCHANTED_BOOK) {
 			for (final EnchantmentInfo info : EnchantmentInfo.enchants) {
 				boolean isValid = false;
@@ -67,7 +69,7 @@ public class EnchantmentInfo {
 		return false;
 	}
 
-	public static EnchantmentData addBook(final ArrayList<ENCHANTMENT_TYPE> enabledTypes, EnchantmentData data, @Nonnull ItemStack itemstack) {
+	public static EnchantmentData addBook(final List<ENCHANTMENT_TYPE> enabledTypes, EnchantmentData data, @Nonnull ItemStack itemstack) {
 		if (!itemstack.isEmpty() && itemstack.getItem() == Items.ENCHANTED_BOOK) {
 			if (data == null) {
 				for (final EnchantmentInfo info : EnchantmentInfo.enchants) {
@@ -80,7 +82,7 @@ public class EnchantmentInfo {
 		return data;
 	}
 
-	private static EnchantmentData addEnchantment(final ArrayList<ENCHANTMENT_TYPE> enabledTypes, EnchantmentData data, @Nonnull ItemStack itemstack, final EnchantmentInfo info) {
+	private static EnchantmentData addEnchantment(final List<ENCHANTMENT_TYPE> enabledTypes, EnchantmentData data, @Nonnull ItemStack itemstack, final EnchantmentInfo info) {
 		boolean isValid = false;
 		for (final ENCHANTMENT_TYPE type : enabledTypes) {
 			if (info.type == type) {
@@ -148,6 +150,7 @@ public class EnchantmentInfo {
 		EnchantmentInfo.punch = new EnchantmentInfo(Enchantments.PUNCH, ENCHANTMENT_TYPE.SHOOTER, 1000);
 		EnchantmentInfo.flame = new EnchantmentInfo(Enchantments.FLAME, ENCHANTMENT_TYPE.SHOOTER, 1000);
 		EnchantmentInfo.infinity = new EnchantmentInfo(Enchantments.INFINITY, ENCHANTMENT_TYPE.SHOOTER, 500);
+		EnchantmentInfo.silktouch = new EnchantmentInfo(Enchantments.SILK_TOUCH, ENCHANTMENT_TYPE.TOOL, 200000);
 	}
 
 	public enum ENCHANTMENT_TYPE {

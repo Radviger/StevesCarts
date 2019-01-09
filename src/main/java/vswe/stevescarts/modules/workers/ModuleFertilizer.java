@@ -6,8 +6,14 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.containers.slots.SlotFertilizer;
 import vswe.stevescarts.entitys.EntityMinecartModular;
@@ -99,35 +105,49 @@ public class ModuleFertilizer extends ModuleWorker implements ISuppliesModule {
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		World world = getCart().world;
 		BlockPos next = getNextblock();
 		for (int i = -range; i <= range; ++i) {
+			label:
 			for (int j = -range; j <= range; ++j) {
-				if (random.nextInt(25) == 0 && fertilize(world, next.add(i, 0, j))) {
-					break;
+				WorkResult r = fertilize(world, next.add(i, 0, j));
+				switch (r) {
+					case SUCCESS:
+						if (random.nextInt(25) == 0) {
+							break label;
+						}
+						break;
+					case FAILURE:
+						return r;
 				}
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
-	private boolean fertilize(World world, BlockPos pos) {
+	private WorkResult fertilize(World world, BlockPos pos) {
 		IBlockState stateOfTopBlock = world.getBlockState(pos);
 		Block blockTop = stateOfTopBlock.getBlock();
 		if (fert > 0) {
+			FakePlayer player = getCartOwner();
 			if (blockTop instanceof IGrowable) {
 				IGrowable growable = (IGrowable) blockTop;
 				if (growable.canGrow(world, pos, stateOfTopBlock, false)) {
 					if (growable.canUseBonemeal(world, getCart().rand, pos, stateOfTopBlock)) {
-						growable.grow(world, getCart().rand, pos, stateOfTopBlock);
-						fert -= 2;
-						return true;
+						PlayerInteractEvent e = new PlayerInteractEvent.RightClickBlock(player, EnumHand.MAIN_HAND, pos, EnumFacing.UP, Vec3d.ZERO);
+						if (!MinecraftForge.EVENT_BUS.post(e)) {
+							growable.grow(world, getCart().rand, pos, stateOfTopBlock);
+							fert -= 2;
+							return WorkResult.SUCCESS;
+						} else {
+							return WorkResult.FAILURE;
+						}
 					}
 				}
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
 	@Override

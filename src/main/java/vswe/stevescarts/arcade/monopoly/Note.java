@@ -3,19 +3,19 @@ package vswe.stevescarts.arcade.monopoly;
 import vswe.stevescarts.guis.GuiMinecart;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Note {
-	public static final ArrayList<Note> notes;
-	public static final Note COAL;
-	public static final Note IRON;
-	public static final Note REDSTONE;
-	public static final Note GOLD;
-	public static final Note LAPIZ;
-	public static final Note DIAMOND;
-	public static final Note EMERALD;
+	public static final List<Note> notes = new ArrayList<>();
+	public static final Note COAL = new Note(0, 1, 0, 0);
+	public static final Note IRON = new Note(1, 5, 1, 0);
+	public static final Note REDSTONE = new Note(2, 10, 2, 0);
+	public static final Note GOLD = new Note(3, 20, 3, 0);
+	public static final Note LAPIZ = new Note(4, 50, 0, 1);
+	public static final Note DIAMOND = new Note(5, 100, 1, 1);
+	public static final Note EMERALD = new Note(6, 500, 2, 1);
 	private int units;
-	private int u;
-	private int v;
+	private int u, v;
 	private int id;
 
 	public Note(final int id, final int units, final int u, final int v) {
@@ -74,16 +74,5 @@ public class Note {
 
 	public int getUnits() {
 		return units;
-	}
-
-	static {
-		notes = new ArrayList<>();
-		COAL = new Note(0, 1, 0, 0);
-		IRON = new Note(1, 5, 1, 0);
-		REDSTONE = new Note(2, 10, 2, 0);
-		GOLD = new Note(3, 20, 3, 0);
-		LAPIZ = new Note(4, 50, 0, 1);
-		DIAMOND = new Note(5, 100, 1, 1);
-		EMERALD = new Note(6, 500, 2, 1);
 	}
 }

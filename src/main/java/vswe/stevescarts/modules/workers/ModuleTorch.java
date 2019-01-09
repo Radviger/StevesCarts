@@ -1,6 +1,8 @@
 package vswe.stevescarts.modules.workers;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -13,6 +15,11 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.BlockSnapshot;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.ForgeEventFactory;
+import net.minecraftforge.event.world.BlockEvent;
+import vswe.stevescarts.StevesCarts;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.containers.slots.SlotTorch;
 import vswe.stevescarts.entitys.EntityMinecartModular;
@@ -20,7 +27,6 @@ import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.helpers.ResourceHelper;
 import vswe.stevescarts.modules.ISuppliesModule;
 
-import javax.annotation.Nonnull;
 import java.io.DataInput;
 import java.io.IOException;
 
@@ -64,7 +70,7 @@ public class ModuleTorch extends ModuleWorker implements ISuppliesModule {
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		final BlockPos next = getLastblock();
 		final EntityMinecartModular cart = getCart();
 		final World world = cart.world;
@@ -74,45 +80,75 @@ public class ModuleTorch extends ModuleWorker implements ISuppliesModule {
 		final int cartX = cart.x();
 		final int cartZ = cart.z();
 		if (light <= lightLimit) {
+			FakePlayer player = getCartOwner();
 			for (int side = -1; side <= 1; side += 2) {
 				final int xTorch = x + ((cartZ != z) ? side : 0);
 				final int zTorch = z + ((cartX != x) ? side : 0);
 				for (int level = 2; level >= -2; level--) {
 					BlockPos pos = new BlockPos(xTorch, y + level, zTorch);
-					if (world.isAirBlock(pos) && Blocks.TORCH.canPlaceBlockAt(world, pos)) {
-						int i = 0;
+					int i = 0;
+					IBlockState oldState = world.getBlockState(pos);
+					if (isTorch(oldState) || !oldState.getMaterial().isReplaceable()) {
+						break;
+					} else {
 						while (i < getInventorySize()) {
-							if (!getStack(i).isEmpty() && Block.getBlockFromItem(getStack(i).getItem()) == Blocks.TORCH) {
+							ItemStack stack = getStack(i);
+							Block block = Block.getBlockFromItem(stack.getItem());
+							if (isTorch(stack) && block.canPlaceBlockAt(world, pos)) {
 								if (doPreWork()) {
 									startWorking(3);
-									return true;
+									return WorkResult.SUCCESS;
 								}
-								IBlockState state = Blocks.TORCH.getStateForPlacement(world, pos, EnumFacing.DOWN, 0, 0, 0, 0, getFakePlayer(), EnumHand.MAIN_HAND);
-								world.setBlockState(new BlockPos(xTorch, y + level, zTorch), state);
-								if (!cart.hasCreativeSupplies()) {
-									@Nonnull
-									ItemStack stack = getStack(i);
-									stack.shrink(1);
-									if (getStack(i).getCount() == 0) {
-										setStack(i, ItemStack.EMPTY);
+								player.setHeldItem(EnumHand.MAIN_HAND, stack);
+								player.capabilities.isCreativeMode = cart.hasCreativeSupplies();
+								IBlockState state = block.getStateForPlacement(world, pos, EnumFacing.UP, 0, 0, 0, 0, player, EnumHand.MAIN_HAND);
+								BlockSnapshot snapshot = new BlockSnapshot(player.world, pos, state);
+								BlockEvent.PlaceEvent e = ForgeEventFactory.onPlayerBlockPlace(player, snapshot, EnumFacing.UP, EnumHand.MAIN_HAND);
+								player.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);
+								if (!e.isCanceled()) {
+									world.setBlockState(pos, setTorchLit(state));
+									world.playEvent(2001, pos, Block.getStateId(state));
+									if (!player.capabilities.isCreativeMode) {
+										stack.shrink(1);
+										if (stack.getCount() == 0) {
+											setStack(i, ItemStack.EMPTY);
+										}
+										cart.markDirty();
+									} else {
+										player.capabilities.isCreativeMode = false;
 									}
-									onInventoryChanged();
-									break;
+								} else {
+									return WorkResult.FAILURE;
 								}
 								break;
 							} else {
 								++i;
 							}
 						}
-						break;
-					} else if (world.getBlockState(pos).getBlock() == Blocks.TORCH) {
-						break;
 					}
 				}
 			}
 		}
 		stopWorking();
-		return false;
+		return WorkResult.SKIP;
+	}
+
+	protected static IBlockState setTorchLit(IBlockState state) {
+		for (IProperty<?> p : state.getProperties().keySet()) {
+			if (p.getName().equals("lit") && p instanceof PropertyBool && !state.getValue((PropertyBool)p)) {
+				state.cycleProperty(p);
+				break;
+			}
+		}
+		return state;
+	}
+
+	protected static boolean isTorch(IBlockState state) {
+		return isTorch(new ItemStack(state.getBlock()));
+	}
+
+	protected static boolean isTorch(ItemStack item) {
+		return StevesCarts.hasOreDictKey(item, "torch");
 	}
 
 	@Override
@@ -261,22 +297,20 @@ public class ModuleTorch extends ModuleWorker implements ISuppliesModule {
 	}
 
 	@Override
-	protected void Save(final NBTTagCompound tagCompound, final int id) {
-		tagCompound.setByte(generateNBTName("lightLimit", id), (byte) lightLimit);
+	protected void Save(final NBTTagCompound compound, final int id) {
+		compound.setByte(generateNBTName("lightLimit", id), (byte) lightLimit);
 	}
 
 	@Override
-	protected void Load(final NBTTagCompound tagCompound, final int id) {
-		lightLimit = tagCompound.getByte(generateNBTName("lightLimit", id));
+	protected void Load(final NBTTagCompound compound, final int id) {
+		lightLimit = compound.getByte(generateNBTName("lightLimit", id));
 		calculateTorches();
 	}
 
 	@Override
 	public boolean haveSupplies() {
 		for (int i = 0; i < getInventorySize(); ++i) {
-			@Nonnull
-			ItemStack item = getStack(i);
-			if (item != null && Block.getBlockFromItem(item.getItem()) == Blocks.TORCH) {
+			if (Block.getBlockFromItem(getStack(i).getItem()) == Blocks.TORCH) {
 				return true;
 			}
 		}

@@ -18,6 +18,7 @@ import vswe.stevescarts.network.message.MessageReturnCart;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class GuiMinecart extends GuiBase {
@@ -83,7 +84,7 @@ public class GuiMinecart extends GuiBase {
 			drawModuleBackgroundItems(thief, x, y);
 			for (final ModuleBase module : cart.getModules()) {
 				if (module.hasGui() && module.hasSlots()) {
-					final ArrayList<SlotBase> slotsList = module.getSlots();
+					final List<SlotBase> slotsList = module.getSlots();
 					for (final SlotBase slot : slotsList) {
 						resetSlot(slot);
 					}
@@ -110,7 +111,7 @@ public class GuiMinecart extends GuiBase {
 	private void renderModuleList(int x, int y) {
 		x -= getGuiLeft();
 		y -= getGuiTop();
-		ArrayList<ModuleCountPair> moduleCounts = cart.getModuleCounts();
+		List<ModuleCountPair> moduleCounts = cart.getModuleCounts();
 
 		GlStateManager.pushMatrix();
 		GlStateManager.enableBlend();
@@ -140,7 +141,7 @@ public class GuiMinecart extends GuiBase {
 	private void renderModuleListText(int x, int y) {
 		x -= getGuiLeft();
 		y -= getGuiTop();
-		ArrayList<ModuleCountPair> moduleCounts = cart.getModuleCounts();
+		List<ModuleCountPair> moduleCounts = cart.getModuleCounts();
 		GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
 		getFontRenderer().drawString(cart.getCartName(), 5, 172, 4210752);
 		GlStateManager.enableBlend();
@@ -158,7 +159,7 @@ public class GuiMinecart extends GuiBase {
 	private void renderModuleListMouseOver(int x, int y) {
 		x -= getGuiLeft();
 		y -= getGuiTop();
-		ArrayList<ModuleCountPair> moduleCounts = cart.getModuleCounts();
+		List<ModuleCountPair> moduleCounts = cart.getModuleCounts();
 		GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
 		for (int i = 0; i < moduleCounts.size(); ++i) {
 			final ModuleCountPair count = moduleCounts.get(i);
@@ -287,7 +288,7 @@ public class GuiMinecart extends GuiBase {
 
 	private void drawModuleSlots(final ModuleBase module) {
 		if (module.hasGui() && module.hasSlots()) {
-			final ArrayList<SlotBase> slotsList = module.getSlots();
+			final List<SlotBase> slotsList = module.getSlots();
 			for (final SlotBase slot : slotsList) {
 				final int[] rect = { slot.getX() + 1, slot.getY() + 1, 16, 16 };
 				module.handleScroll(rect);

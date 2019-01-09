@@ -47,7 +47,7 @@ public class ModuleShooterAdv extends ModuleShooter {
 	}
 
 	@Override
-	protected void generatePipes(final ArrayList<Integer> list) {
+	protected void generatePipes(final List<Integer> list) {
 		list.add(1);
 	}
 

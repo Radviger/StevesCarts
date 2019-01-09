@@ -14,6 +14,7 @@ import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.modules.workers.tools.ModuleDrill;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ModuleOreTracker extends ModuleAddon {
 	public ModuleOreTracker(final EntityMinecartModular cart) {
@@ -24,7 +25,7 @@ public class ModuleOreTracker extends ModuleAddon {
 		return findBlockToMine(drill, new ArrayList<>(), start, true);
 	}
 
-	private BlockPos findBlockToMine(final ModuleDrill drill, final ArrayList<BlockPos> checked, final BlockPos current, final boolean first) {
+	private BlockPos findBlockToMine(final ModuleDrill drill, final List<BlockPos> checked, final BlockPos current, final boolean first) {
 		if (current == null || checked.contains(current) || (!first && !isOre(current))) {
 			return null;
 		}
@@ -68,7 +69,7 @@ public class ModuleOreTracker extends ModuleAddon {
 		int z = pos.getZ() - fromPos.getZ();
 		EnumFacing facing = EnumFacing.getFacingFromVector(x, y, z);
 		RayTraceResult hit = new RayTraceResult(new Vec3d(0,0,0), facing, pos);
-		ItemStack stack = b.getPickBlock(state, hit, getCart().world, pos, getFakePlayer());
+		ItemStack stack = b.getPickBlock(state, hit, getCart().world, pos, getCartOwner());
 		if (stack == null || stack.isEmpty()) {
 			return false;
 		}

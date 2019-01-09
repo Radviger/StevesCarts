@@ -42,6 +42,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TileEntityDistributor extends TileEntityBase implements IInventory, ISidedInventory {
@@ -388,7 +389,7 @@ public class TileEntityDistributor extends TileEntityBase implements IInventory,
 		if (invs.length > 0) {
 			for (final DistributorSide side : getSides()) {
 				if (side.getSide() == direction) {
-					final ArrayList<SCTank> tanks = new ArrayList<>();
+					final List<SCTank> tanks = new ArrayList<>();
 					if (hasTop && hasBot) {
 						populateTanks(tanks, side, invs[0], false);
 						populateTanks(tanks, side, invs[1], true);
@@ -404,7 +405,7 @@ public class TileEntityDistributor extends TileEntityBase implements IInventory,
 		return new SCTank[0];
 	}
 
-	private void populateTanks(final ArrayList<SCTank> tanks, final DistributorSide side, final TileEntityManager manager, final boolean top) {
+	private void populateTanks(final List<SCTank> tanks, final DistributorSide side, final TileEntityManager manager, final boolean top) {
 		if (manager != null && manager instanceof TileEntityLiquid) {
 			final TileEntityLiquid fluid = (TileEntityLiquid) manager;
 			final SCTank[] managerTanks = fluid.getTanks();
@@ -416,7 +417,7 @@ public class TileEntityDistributor extends TileEntityBase implements IInventory,
 		}
 	}
 
-	private void populateSlots(final ArrayList<Integer> slotchunks, final DistributorSide side, final TileEntityManager manager, final boolean top) {
+	private void populateSlots(final List<Integer> slotchunks, final DistributorSide side, final TileEntityManager manager, final boolean top) {
 		if (manager != null && manager instanceof TileEntityCargo) {
 			for (int i = 0; i < 4; ++i) {
 				if (isChunkValid(side, manager, i, top)) {
@@ -450,7 +451,7 @@ public class TileEntityDistributor extends TileEntityBase implements IInventory,
 		if (invs.length > 0) {
 			for (final DistributorSide otherSide : getSides()) {
 				if (otherSide.getFacing() == side) {
-					final ArrayList<Integer> slotchunks = new ArrayList<>();
+					final List<Integer> slotchunks = new ArrayList<>();
 					if (hasTop && hasBot) {
 						populateSlots(slotchunks, otherSide, invs[0], false);
 						populateSlots(slotchunks, otherSide, invs[1], true);

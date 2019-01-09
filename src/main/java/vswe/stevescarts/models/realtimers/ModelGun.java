@@ -9,7 +9,7 @@ import vswe.stevescarts.models.ModelCartbase;
 import vswe.stevescarts.modules.ModuleBase;
 import vswe.stevescarts.modules.realtimers.ModuleShooter;
 
-import java.util.ArrayList;
+import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class ModelGun extends ModelCartbase {
@@ -33,7 +33,7 @@ public class ModelGun extends ModelCartbase {
 
 	public ModelGun() { }
 
-	public ModelGun(final ArrayList<Integer> pipes) {
+	public ModelGun(final List<Integer> pipes) {
 		guns = new ModelRenderer[pipes.size()];
 		for (int i = 0; i < pipes.size(); ++i) {
 			float angle = (new int[] { 3, 4, 5, 2, -1, 6, 1, 0, 7 })[pipes.get(i)];

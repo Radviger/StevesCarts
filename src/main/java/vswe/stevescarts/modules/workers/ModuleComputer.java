@@ -214,7 +214,7 @@ public class ModuleComputer extends ModuleWorker {
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		if (activeProg != null) {
 			if (doPreWork()) {
 				startWorking(activeProg.getRunTime());
@@ -225,7 +225,7 @@ public class ModuleComputer extends ModuleWorker {
 				stopWorking();
 			}
 		}
-		return true;
+		return WorkResult.SUCCESS;
 	}
 
 	@Override

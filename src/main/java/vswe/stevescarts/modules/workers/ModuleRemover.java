@@ -7,6 +7,9 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.world.BlockEvent;
 import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.modules.IActivatorModule;
 
@@ -49,11 +52,12 @@ public class ModuleRemover extends ModuleWorker implements IActivatorModule {
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		EntityMinecartModular cart = getCart();
 		World world = cart.world;
-		if (remove.getY() != -1 && (remove.getX() != cart.x() || remove.getZ() != cart.z()) && removeRail(world, remove, true)) {
-			return false;
+		WorkResult pr = removeRail(world, remove, true);
+		if (remove.getY() != -1 && (remove.getX() != cart.x() || remove.getZ() != cart.z()) && pr == WorkResult.SUCCESS) {
+			return WorkResult.SKIP;
 		}
 		BlockPos next = getNextblock();
 		BlockPos last = getLastblock();
@@ -62,40 +66,43 @@ public class ModuleRemover extends ModuleWorker implements IActivatorModule {
 		if (!front) {
 			if (back) {
 				turnback();
-				if (removeRail(world, cart.getPosition(), false)) {
-					return true;
-				}
+                return removeRail(world, cart.getPosition(), false);
 			}
-		} else if (!back && removeRail(world, cart.getPosition(), false)) {
-			return true;
+		} else {
+		    WorkResult rr = removeRail(world, cart.getPosition(), false);
+            return rr == WorkResult.FAILURE ? rr : !back && rr == WorkResult.SUCCESS ? WorkResult.SUCCESS : WorkResult.SKIP;
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
 	private boolean isRailAtCoords(World world, BlockPos coords) {
 		return BlockRailBase.isRailBlock(world, coords.up()) || BlockRailBase.isRailBlock(getCart().world, coords) || BlockRailBase.isRailBlock(getCart().world, coords.down());
 	}
 
-	private boolean removeRail(World world, BlockPos pos, final boolean flag) {
+	private WorkResult removeRail(World world, BlockPos pos, final boolean flag) {
 		if (flag) {
-			IBlockState blockState = world.getBlockState(pos);
-			if (BlockRailBase.isRailBlock(blockState)) {
+			FakePlayer player = getCartOwner();
+			IBlockState state = world.getBlockState(pos);
+			if (BlockRailBase.isRailBlock(state)) {
 				if (isRemovingEnabled()) {
 					if (doPreWork()) {
 						startWorking(12);
-						return true;
+						return WorkResult.SUCCESS;
 					}
-					@Nonnull
-					ItemStack iStack = new ItemStack(blockState.getBlock(), 1, 0);
-					getCart().addItemToChest(iStack);
-					if (iStack.getCount() == 0) {
-						world.setBlockToAir(pos);
-					}
+					BlockEvent.BreakEvent e = new BlockEvent.BreakEvent(world, pos, state, player);
+					if (!MinecraftForge.EVENT_BUS.post(e)) {
+						ItemStack stack = new ItemStack(state.getBlock(), 1, 0);
+						getCart().addItemToChest(stack);
+						if (stack.getCount() == 0) {
+							world.playEvent(2001, pos, BlockRailBase.getStateId(state));
+							world.setBlockToAir(pos);
+						}
+					} else {
+					    return WorkResult.FAILURE;
+                    }
 				}
-				remove = new BlockPos(pos.getX(), -1, pos.getZ());
-			} else {
-				remove = new BlockPos(pos.getX(), -1, pos.getZ());
 			}
+			remove = new BlockPos(pos.getX(), -1, pos.getZ());
 		} else if (BlockRailBase.isRailBlock(world, pos.down())) {
 			remove = pos.down();
 		} else if (BlockRailBase.isRailBlock(world, pos)) {
@@ -104,7 +111,7 @@ public class ModuleRemover extends ModuleWorker implements IActivatorModule {
 			remove = pos.up();
 		}
 		stopWorking();
-		return false;
+		return WorkResult.SKIP;
 	}
 
 	private void enableRemoving(final boolean remove) {

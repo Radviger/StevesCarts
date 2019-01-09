@@ -26,7 +26,7 @@ import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class GuiCartAssembler extends GuiBase {
-	private ArrayList<TextWithColor> statusLog;
+	private List<TextWithColor> statusLog;
 	private boolean hasErrors;
 	private boolean firstLoad;
 	private static ResourceLocation[] backgrounds;
@@ -66,7 +66,7 @@ public class GuiCartAssembler extends GuiBase {
 			updateErrorList();
 			assembler.isErrorListOutdated = false;
 		}
-		final ArrayList<TextWithColor> lines = statusLog;
+		final List<TextWithColor> lines = statusLog;
 		if (lines != null) {
 			int lineCount = lines.size();
 			boolean dotdotdot = false;
@@ -105,7 +105,7 @@ public class GuiCartAssembler extends GuiBase {
 	}
 
 	private void updateErrorList() {
-		final ArrayList<TextWithColor> lines = new ArrayList<>();
+		final List<TextWithColor> lines = new ArrayList<>();
 		if (this.assembler.getStackInSlot(0).isEmpty()) {
 			this.addText(lines, Localization.GUI.ASSEMBLER.ASSEMBLE_INSTRUCTION.translate());
 			this.hasErrors = true;
@@ -121,7 +121,7 @@ public class GuiCartAssembler extends GuiBase {
 				this.addText(lines, Localization.GUI.ASSEMBLER.TOTAL_COST.translate() + ": " + this.assembler.getTotalCost());
 				this.addText(lines, Localization.GUI.ASSEMBLER.TOTAl_TIME.translate() + ": " + this.formatTime((int) (this.assembler.generateAssemblingTime() / this.assembler.getEfficiency())));
 				this.addNewLine(lines);
-				final ArrayList<String> errors = this.assembler.getErrors();
+				final List<String> errors = this.assembler.getErrors();
 				this.hasErrors = (errors.size() > 0);
 				if (errors.size() == 0) {
 					this.addText(lines, Localization.GUI.ASSEMBLER.NO_ERROR.translate(), 22566);
@@ -135,18 +135,18 @@ public class GuiCartAssembler extends GuiBase {
 		this.statusLog = lines;
 	}
 
-	private void addText(final ArrayList<TextWithColor> lines, final String text) {
+	private void addText(final List<TextWithColor> lines, final String text) {
 		addText(lines, text, 4210752);
 	}
 
-	private void addText(final ArrayList<TextWithColor> lines, final String text, final int color) {
+	private void addText(final List<TextWithColor> lines, final String text, final int color) {
 		final List newlines = getFontRenderer().listFormattedStringToWidth(text, 130);
 		for (final Object line : newlines) {
 			lines.add(new TextWithColor(line.toString(), color));
 		}
 	}
 
-	private void addNewLine(final ArrayList<TextWithColor> lines) {
+	private void addNewLine(final List<TextWithColor> lines) {
 		lines.add(null);
 	}
 
@@ -167,7 +167,7 @@ public class GuiCartAssembler extends GuiBase {
 		drawTexturedModalRect(j + 256, k, 0, 0, xSize - 256, ySize);
 		drawTexturedModalRect(j + 256, k, 0, 0, xSize - 256, ySize);
 		ResourceHelper.bindResource(GuiCartAssembler.textureExtra);
-		final ArrayList<SlotAssembler> slots = assembler.getSlots();
+		final List<SlotAssembler> slots = assembler.getSlots();
 		for (final SlotAssembler slot : slots) {
 			int targetX = slot.getX() - 1;
 			int targetY = slot.getY() - 1;
@@ -315,7 +315,7 @@ public class GuiCartAssembler extends GuiBase {
 		final int j = getGuiLeft();
 		final int k = getGuiTop();
 		if (dropdownX != -1 && dropdownY != -1) {
-			final ArrayList<DropDownMenuItem> items = assembler.getDropDown();
+			final List<DropDownMenuItem> items = assembler.getDropDown();
 			for (int i = 0; i < items.size(); ++i) {
 				final DropDownMenuItem item = items.get(i);
 				final int[] rect = item.getRect(dropdownX, dropdownY, i);
@@ -426,7 +426,7 @@ public class GuiCartAssembler extends GuiBase {
 		final int x = x0 - getGuiLeft();
 		final int y = y0 - getGuiTop();
 		if (dropdownX != -1 && dropdownY != -1) {
-			final ArrayList<DropDownMenuItem> items = assembler.getDropDown();
+			final List<DropDownMenuItem> items = assembler.getDropDown();
 			for (int i = 0; i < items.size(); ++i) {
 				final DropDownMenuItem item = items.get(i);
 				boolean insideSubRect = false;
@@ -482,7 +482,7 @@ public class GuiCartAssembler extends GuiBase {
 				}
 			}
 		} else {
-			final ArrayList<SlotAssembler> slots = assembler.getSlots();
+			final List<SlotAssembler> slots = assembler.getSlots();
 			for (int i = 1; i < slots.size(); ++i) {
 				final SlotAssembler slot = slots.get(i);
 				final int targetX = slot.getX() - 1;
@@ -496,7 +496,7 @@ public class GuiCartAssembler extends GuiBase {
 		}
 		if (button == 0 && dropdownX != -1 && dropdownY != -1) {
 			boolean anyLargeItem = false;
-			final ArrayList<DropDownMenuItem> items = assembler.getDropDown();
+			final List<DropDownMenuItem> items = assembler.getDropDown();
 			for (int j = 0; j < items.size(); ++j) {
 				final DropDownMenuItem item = items.get(j);
 				if (item.getIsLarge()) {

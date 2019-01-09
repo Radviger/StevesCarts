@@ -52,7 +52,7 @@ public class ItemCarts extends ItemMinecart {
 					final NBTTagCompound info = stack.getTagCompound();
 					if (info != null && !info.hasKey("maxTime")) {
 						try {
-							final EntityMinecartModular cart = new EntityMinecartModular(world, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, info, stack.getDisplayName());
+							final EntityMinecartModular cart = new EntityMinecartModular(world, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, info, stack.getDisplayName(), player.getGameProfile());
 							world.spawnEntity(cart);
 						} catch (Exception e) {
 							e.printStackTrace();
@@ -93,7 +93,7 @@ public class ItemCarts extends ItemMinecart {
 		if (info != null) {
 			final NBTTagByteArray moduleIDTag = (NBTTagByteArray) info.getTag("Modules");
 			final byte[] bytes = moduleIDTag.getByteArray();
-			final ArrayList<ModuleCountPair> counts = new ArrayList<>();
+			final List<ModuleCountPair> counts = new ArrayList<>();
 			for (int i = 0; i < bytes.length; ++i) {
 				final byte id = bytes[i];
 				final ModuleData module = ModuleData.getList().get(id);

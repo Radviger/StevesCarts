@@ -15,7 +15,7 @@ import vswe.stevescarts.containers.slots.SlotAssembler;
 import vswe.stevescarts.containers.slots.SlotHull;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
+import java.util.List;
 
 public class ContainerCartAssembler extends ContainerBase {
 	private TileEntityCartAssembler assembler;
@@ -36,7 +36,7 @@ public class ContainerCartAssembler extends ContainerBase {
 
 	public ContainerCartAssembler(final IInventory invPlayer, final TileEntityCartAssembler assembler) {
 		this.assembler = assembler;
-		final ArrayList<SlotAssembler> slots = assembler.getSlots();
+		final List<SlotAssembler> slots = assembler.getSlots();
 		for (final SlotAssembler slot : slots) {
 			addSlotToContainer(slot);
 		}
@@ -95,8 +95,8 @@ public class ContainerCartAssembler extends ContainerBase {
 				ItemStack playerItem = playerInventory.getItemStack();
 				@Nonnull
 				ItemStack slotItem = hullSlot.getStack();
-				final ArrayList<SlotAssembler> newSlots = assembler.getValidSlotFromHullItem(playerItem);
-				final ArrayList<SlotAssembler> oldSlots = assembler.getValidSlotFromHullItem(slotItem);
+				final List<SlotAssembler> newSlots = assembler.getValidSlotFromHullItem(playerItem);
+				final List<SlotAssembler> oldSlots = assembler.getValidSlotFromHullItem(slotItem);
 				if (oldSlots != null) {
 					if (newSlots != null) {
 						for (final SlotAssembler slot : newSlots) {

@@ -13,7 +13,7 @@ import vswe.stevescarts.helpers.DistributorSide;
 import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.helpers.ResourceHelper;
 
-import java.util.ArrayList;
+import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class GuiDistributor extends GuiBase {
@@ -61,7 +61,7 @@ public class GuiDistributor extends GuiBase {
 		x -= getGuiLeft();
 		y -= getGuiTop();
 		final TileEntityManager[] invs = distributor.getInventories();
-		final ArrayList<DistributorSide> sides = distributor.getSides();
+		final List<DistributorSide> sides = distributor.getSides();
 		int id = 0;
 		for (final DistributorSide side : sides) {
 			if (side.isEnabled(distributor)) {

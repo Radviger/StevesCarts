@@ -1,19 +1,24 @@
 package vswe.stevescarts.blocks.tileentities;
 
+import com.mojang.authlib.GameProfile;
 import net.minecraft.block.BlockRailBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.inventory.*;
+import net.minecraft.inventory.Container;
+import net.minecraft.inventory.IContainerListener;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import vswe.stevescarts.Constants;
@@ -43,6 +48,7 @@ import javax.annotation.Nonnull;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TileEntityCartAssembler extends TileEntityBase implements IInventory, ISidedInventory {
 	private int maxAssemblingTime;
@@ -53,19 +59,19 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 	protected NonNullList<ItemStack> spareModules;
 	private boolean isAssembling;
 	public boolean isErrorListOutdated;
-	private ArrayList<TitleBox> titleBoxes;
-	private ArrayList<DropDownMenuItem> dropDownItems;
+	private List<TitleBox> titleBoxes;
+	private List<DropDownMenuItem> dropDownItems;
 	private SimulationInfo info;
 	private boolean shouldSpin;
 	private EntityMinecartModular placeholder;
 	private float yaw;
 	private float roll;
 	private boolean rolldown;
-	private ArrayList<SlotAssembler> slots;
-	private ArrayList<SlotAssembler> engineSlots;
-	private ArrayList<SlotAssembler> addonSlots;
-	private ArrayList<SlotAssembler> chestSlots;
-	private ArrayList<SlotAssembler> funcSlots;
+	private List<SlotAssembler> slots;
+	private List<SlotAssembler> engineSlots;
+	private List<SlotAssembler> addonSlots;
+	private List<SlotAssembler> chestSlots;
+	private List<SlotAssembler> funcSlots;
 	private SlotHull hullSlot;
 	private SlotAssembler toolSlot;
 	private SlotOutput outputSlot;
@@ -75,10 +81,11 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 	@Nonnull
 	private ItemStack lastHull = ItemStack.EMPTY;
 	private float fuelLevel;
-	private ArrayList<TileEntityUpgrade> upgrades;
+	private List<TileEntityUpgrade> upgrades;
 	public boolean isDead;
 	private boolean loaded;
 	NonNullList<ItemStack> inventoryStacks;
+	public GameProfile owner;
 
 	public static final String MODIFY_STATUS = "ModifyStatus";
 
@@ -172,26 +179,24 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		upgrades.remove(upgrade);
 	}
 
-	public ArrayList<TileEntityUpgrade> getUpgradeTiles() {
+	public List<TileEntityUpgrade> getUpgradeTiles() {
 		return upgrades;
 	}
 
-	public ArrayList<AssemblerUpgrade> getUpgrades() {
-		final ArrayList<AssemblerUpgrade> lst = new ArrayList<>();
+	public List<AssemblerUpgrade> getUpgrades() {
+		final List<AssemblerUpgrade> lst = new ArrayList<>();
 		for (final TileEntityUpgrade tile : upgrades) {
 			lst.add(tile.getUpgrade());
 		}
 		return lst;
 	}
 
-	public ArrayList<BaseEffect> getEffects() {
-		final ArrayList<BaseEffect> lst = new ArrayList<>();
+	public List<BaseEffect> getEffects() {
+		final List<BaseEffect> lst = new ArrayList<>();
 		for (final TileEntityUpgrade tile : upgrades) {
 			final AssemblerUpgrade upgrade = tile.getUpgrade();
 			if (upgrade != null) {
-				for (final BaseEffect effect : upgrade.getEffects()) {
-					lst.add(effect);
-				}
+				lst.addAll(upgrade.getEffects());
 			}
 		}
 		return lst;
@@ -201,11 +206,11 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		return info;
 	}
 
-	public ArrayList<DropDownMenuItem> getDropDown() {
+	public List<DropDownMenuItem> getDropDown() {
 		return dropDownItems;
 	}
 
-	public ArrayList<TitleBox> getTitleBoxes() {
+	public List<TitleBox> getTitleBoxes() {
 		return titleBoxes;
 	}
 
@@ -217,23 +222,23 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		return 0;
 	}
 
-	public ArrayList<SlotAssembler> getSlots() {
+	public List<SlotAssembler> getSlots() {
 		return slots;
 	}
 
-	public ArrayList<SlotAssembler> getEngines() {
+	public List<SlotAssembler> getEngines() {
 		return engineSlots;
 	}
 
-	public ArrayList<SlotAssembler> getChests() {
+	public List<SlotAssembler> getChests() {
 		return chestSlots;
 	}
 
-	public ArrayList<SlotAssembler> getAddons() {
+	public List<SlotAssembler> getAddons() {
 		return addonSlots;
 	}
 
-	public ArrayList<SlotAssembler> getFuncs() {
+	public List<SlotAssembler> getFuncs() {
 		return funcSlots;
 	}
 
@@ -330,7 +335,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		return generateAssemblingTime(getModules(true, new int[] { getKeepSize(), getRemovedSize() }), getModules(true, new int[] { getKeepSize(), 1 }));
 	}
 
-	private int generateAssemblingTime(final ArrayList<ModuleData> modules, final ArrayList<ModuleData> removed) {
+	private int generateAssemblingTime(final List<ModuleData> modules, final List<ModuleData> removed) {
 		int timeRequired = 100;
 		for (final ModuleData module : modules) {
 			timeRequired += getAssemblingTime(module, false);
@@ -387,16 +392,16 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		}
 	}
 
-	public ArrayList<ModuleData> getNonHullModules() {
+	public List<ModuleData> getNonHullModules() {
 		return getModules(false);
 	}
 
-	public ArrayList<ModuleData> getModules(final boolean includeHull) {
+	public List<ModuleData> getModules(final boolean includeHull) {
 		return getModules(includeHull, new int[] { getRemovedSize() });
 	}
 
-	public ArrayList<ModuleData> getModules(final boolean includeHull, final int[] invalid) {
-		final ArrayList<ModuleData> modules = new ArrayList<>();
+	public List<ModuleData> getModules(final boolean includeHull, final int[] invalid) {
+		final List<ModuleData> modules = new ArrayList<>();
 		for (int i = includeHull ? 0 : 1; i < getSizeInventory() - nonModularSlots(); ++i) {
 			@Nonnull
 			ItemStack item = getStackInSlot(i);
@@ -433,8 +438,8 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		return getErrors().size() > 0;
 	}
 
-	public ArrayList<String> getErrors() {
-		final ArrayList<String> errors = new ArrayList<>();
+	public List<String> getErrors() {
+		final List<String> errors = new ArrayList<>();
 		if (hullSlot.getStack().isEmpty()) {
 			errors.add(Localization.GUI.ASSEMBLER.HULL_ERROR.translate());
 		} else {
@@ -447,7 +452,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 				} else if (outputSlot != null && !outputSlot.getStack().isEmpty()) {
 					errors.add(Localization.GUI.ASSEMBLER.DEPARTURE_BAY.translate());
 				}
-				final ArrayList<ModuleData> modules = new ArrayList<>();
+				final List<ModuleData> modules = new ArrayList<>();
 				for (int i = 0; i < getSizeInventory() - nonModularSlots(); ++i) {
 					if (!getStackInSlot(i).isEmpty()) {
 						final ModuleData data = ModItems.MODULES.getModuleData(getStackInSlot(i));
@@ -466,7 +471,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 	}
 
 	public int getTotalCost() {
-		final ArrayList<ModuleData> modules = new ArrayList<>();
+		final List<ModuleData> modules = new ArrayList<>();
 		for (int i = 0; i < getSizeInventory() - nonModularSlots(); ++i) {
 			if (!getStackInSlot(i).isEmpty()) {
 				final ModuleData data = ModItems.MODULES.getModuleData(getStackInSlot(i));
@@ -549,7 +554,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		if (hullSlot == null) {
 			return;
 		}
-		final ArrayList<SlotAssembler> slots = getValidSlotFromHullItem(hullSlot.getStack());
+		final List<SlotAssembler> slots = getValidSlotFromHullItem(hullSlot.getStack());
 		if (slots != null) {
 			for (final SlotAssembler slot : slots) {
 				slot.validate();
@@ -557,7 +562,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		}
 	}
 
-	public ArrayList<SlotAssembler> getValidSlotFromHullItem(@Nonnull ItemStack hullitem) {
+	public List<SlotAssembler> getValidSlotFromHullItem(@Nonnull ItemStack hullitem) {
 		if (!hullitem.isEmpty()) {
 			final ModuleData data = ModItems.MODULES.getModuleData(hullitem);
 			if (data != null && data instanceof ModuleDataHull) {
@@ -568,8 +573,8 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		return null;
 	}
 
-	private ArrayList<SlotAssembler> getValidSlotFromHull(final ModuleDataHull hull) {
-		final ArrayList<SlotAssembler> slots = new ArrayList<>();
+	private List<SlotAssembler> getValidSlotFromHull(final ModuleDataHull hull) {
+		final List<SlotAssembler> slots = new ArrayList<>();
 		for (int i = 0; i < hull.getEngineMax(); ++i) {
 			slots.add(getEngines().get(i));
 		}
@@ -674,14 +679,13 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 						try {
 							final NBTTagCompound info = outputItem.getTagCompound();
 							if (info != null) {
-								final EntityMinecartModular cart = new EntityMinecartModular(world, xPos + 0.5f, yPos + 0.5f, zPos + 0.5f, info, outputItem.getDisplayName());
+								final EntityMinecartModular cart = new EntityMinecartModular(world, xPos + 0.5f, yPos + 0.5f, zPos + 0.5f, info, outputItem.getDisplayName(), this.owner);
 								world.spawnEntity(cart);
 								cart.temppushX = tilePos.getX() - pos.getX();
 								cart.temppushZ = tilePos.getZ() - pos.getZ();
 								managerInteract(cart, true);
 								return;
 							}
-							continue;
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -946,7 +950,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 	}
 
 	private void updateRenderMenu() {
-		final ArrayList<DropDownMenuItem> list = info.getList();
+		final List<DropDownMenuItem> list = info.getList();
 		dropDownItems.clear();
 		for (final DropDownMenuItem item : list) {
 			if (item.getModuleClass() == null) {
@@ -963,7 +967,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 	}
 
 	private byte[] getModularInfoBytes() {
-		final ArrayList<Byte> datalist = new ArrayList<>();
+		final List<Byte> datalist = new ArrayList<>();
 		for (int i = 0; i < getSizeInventory() - nonModularSlots(); ++i) {
 			if (!getStackInSlot(i).isEmpty()) {
 				final ModuleData data = ModItems.MODULES.getModuleData(getStackInSlot(i));
@@ -1067,7 +1071,7 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 
 	@Override
 	public ITextComponent getDisplayName() {
-		return new TextComponentString(getName());
+		return new TextComponentTranslation(getName());
 	}
 
 	@Override
@@ -1089,9 +1093,9 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 	}
 
 	@Override
-	public void readFromNBT(final NBTTagCompound tagCompound) {
-		super.readFromNBT(tagCompound);
-		final NBTTagList items = tagCompound.getTagList("Items", NBTHelper.COMPOUND.getId());
+	public void readFromNBT(final NBTTagCompound compound) {
+		super.readFromNBT(compound);
+		final NBTTagList items = compound.getTagList("Items", NBTHelper.COMPOUND.getId());
 		for (int i = 0; i < items.tagCount(); ++i) {
 			final NBTTagCompound item = items.getCompoundTagAt(i);
 			final int slot = item.getByte("Slot") & 0xFF;
@@ -1100,30 +1104,33 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 				setInventorySlotContents(slot, iStack);
 			}
 		}
-		final NBTTagList spares = tagCompound.getTagList("Spares", NBTHelper.COMPOUND.getId());
+		final NBTTagList spares = compound.getTagList("Spares", NBTHelper.COMPOUND.getId());
 		spareModules.clear();
 		for (int j = 0; j < spares.tagCount(); ++j) {
 			final NBTTagCompound item2 = spares.getCompoundTagAt(j);
 			ItemStack iStack = new ItemStack(item2);
 			spareModules.add(iStack);
 		}
-		final NBTTagCompound outputTag = (NBTTagCompound) tagCompound.getTag("Output");
+		final NBTTagCompound outputTag = (NBTTagCompound) compound.getTag("Output");
 		if (outputTag != null) {
 			outputItem = new ItemStack(outputTag);
 		}
-		if (tagCompound.hasKey("Fuel")) {
-			setFuelLevel(tagCompound.getShort("Fuel"));
+		if (compound.hasKey("Fuel")) {
+			setFuelLevel(compound.getShort("Fuel"));
 		} else {
-			setFuelLevel(tagCompound.getInteger("IntFuel"));
+			setFuelLevel(compound.getInteger("IntFuel"));
 		}
-		maxAssemblingTime = tagCompound.getInteger("maxTime");
-		setAssemblingTime(tagCompound.getInteger("currentTime"));
-		isAssembling = tagCompound.getBoolean("isAssembling");
+		maxAssemblingTime = compound.getInteger("maxTime");
+		setAssemblingTime(compound.getInteger("currentTime"));
+		isAssembling = compound.getBoolean("isAssembling");
+		if (compound.hasKey("Owner")) {
+			owner = NBTUtil.readGameProfileFromNBT(compound.getCompoundTag("Owner"));
+		}
 	}
 
 	@Override
-	public NBTTagCompound writeToNBT(final NBTTagCompound tagCompound) {
-		super.writeToNBT(tagCompound);
+	public NBTTagCompound writeToNBT(final NBTTagCompound compound) {
+		super.writeToNBT(compound);
 		final NBTTagList items = new NBTTagList();
 		for (int i = 0; i < getSizeInventory(); ++i) {
 			ItemStack iStack = getStackInSlot(i);
@@ -1134,27 +1141,31 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 				items.appendTag(item);
 			}
 		}
-		tagCompound.setTag("Items", items);
+		compound.setTag("Items", items);
 		final NBTTagList spares = new NBTTagList();
-		for (int j = 0; j < spareModules.size(); ++j) {
-			ItemStack iStack2 = spareModules.get(j);
-			if (!iStack2.isEmpty()) {
-				final NBTTagCompound item2 = new NBTTagCompound();
-				iStack2.writeToNBT(item2);
-				spares.appendTag(item2);
+		for (ItemStack m : spareModules) {
+			if (!m.isEmpty()) {
+				final NBTTagCompound tag = new NBTTagCompound();
+				m.writeToNBT(tag);
+				spares.appendTag(tag);
 			}
 		}
-		tagCompound.setTag("Spares", spares);
+		compound.setTag("Spares", spares);
 		if (!outputItem.isEmpty()) {
 			final NBTTagCompound outputTag = new NBTTagCompound();
 			outputItem.writeToNBT(outputTag);
-			tagCompound.setTag("Output", outputTag);
+			compound.setTag("Output", outputTag);
 		}
-		tagCompound.setInteger("IntFuel", getFuelLevel());
-		tagCompound.setInteger("maxTime", maxAssemblingTime);
-		tagCompound.setInteger("currentTime", getAssemblingTime());
-		tagCompound.setBoolean("isAssembling", isAssembling);
-		return tagCompound;
+		compound.setInteger("IntFuel", getFuelLevel());
+		compound.setInteger("maxTime", maxAssemblingTime);
+		compound.setInteger("currentTime", getAssemblingTime());
+		compound.setBoolean("isAssembling", isAssembling);
+		if (this.owner != null) {
+			NBTTagCompound owner = new NBTTagCompound();
+			NBTUtil.writeGameProfile(owner, this.owner);
+			compound.setTag("Owner", owner);
+		}
+		return compound;
 	}
 
 	public NBTTagCompound getOutputInfo() {
@@ -1176,17 +1187,16 @@ public class TileEntityCartAssembler extends TileEntityBase implements IInventor
 		info.setInteger("currentTime", getAssemblingTime());
 		info.setInteger("maxTime", maxAssemblingTime);
 		final int modulecount = info.getByteArray("Modules").length;
-		final NBTTagCompound spares = new NBTTagCompound();
-		final byte[] moduleIDs = new byte[spareModules.size()];
+		final byte[] spares = new byte[spareModules.size()];
 		for (int i = 0; i < spareModules.size(); ++i) {
 			ItemStack item = spareModules.get(i);
 			final ModuleData data = ModItems.MODULES.getModuleData(item);
 			if (data != null) {
-				moduleIDs[i] = data.getID();
+				spares[i] = data.getID();
 				ModItems.MODULES.addExtraDataToCart(info, item, i + modulecount);
 			}
 		}
-		info.setByteArray("Spares", moduleIDs);
+		info.setByteArray("Spares", spares);
 		return outputItem;
 	}
 

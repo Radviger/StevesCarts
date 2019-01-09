@@ -20,6 +20,7 @@ import vswe.stevescarts.modules.workers.tools.ModuleTool;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ModuleLabel extends ModuleAddon {
 	private ArrayList<LabelInformation> labels;
@@ -136,7 +137,7 @@ public class ModuleLabel extends ModuleAddon {
 	}
 
 	@Override
-	public void addToLabel(final ArrayList<String> label) {
+	public void addToLabel(final List<String> label) {
 		for (int i = 0; i < labels.size(); ++i) {
 			if (isActive(i)) {
 				label.add(labels.get(i).getLabel());

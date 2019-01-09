@@ -5,7 +5,7 @@ import vswe.stevescarts.computer.ComputerProg;
 import vswe.stevescarts.computer.ComputerTask;
 import vswe.stevescarts.modules.workers.ModuleComputer;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class ButtonTask extends ButtonAssembly {
 	private int id;
@@ -98,7 +98,7 @@ public class ButtonTask extends ButtonAssembly {
 		if (program == null) {
 			return null;
 		}
-		final ArrayList<ComputerTask> tasks = program.getTasks();
+		final List<ComputerTask> tasks = program.getTasks();
 		if (id >= 0 && id < tasks.size()) {
 			return tasks.get(id);
 		}

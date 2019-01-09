@@ -33,7 +33,7 @@ import vswe.stevescarts.modules.storages.tanks.ModuleTank;
 import vswe.stevescarts.network.message.MessageFluidSync;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
+import java.util.List;
 
 public class TileEntityLiquid extends TileEntityManager implements ITankHolder {
 	public SCTank[] tanks;
@@ -143,7 +143,7 @@ public class TileEntityLiquid extends TileEntityManager implements ITankHolder {
 				return false;
 			}
 		} else {
-			final ArrayList<ModuleTank> cartTanks = transfer.getCart().getTanks();
+			final List<ModuleTank> cartTanks = transfer.getCart().getTanks();
 			for (final IFluidTank cartTank : cartTanks) {
 				final int drain = drainTank(cartTank, transfer.getSetting(), maximumToTransfer, false);
 				if (drain > 0) {
@@ -170,7 +170,7 @@ public class TileEntityLiquid extends TileEntityManager implements ITankHolder {
 			}
 			fillAmount = fluidToFill.amount;
 			if (isFluidValid(sideId, fluidToFill)) {
-				final ArrayList<ModuleTank> cartTanks = cart.getTanks();
+				final List<ModuleTank> cartTanks = cart.getTanks();
 				for (final IFluidTank cartTank : cartTanks) {
 					fluidToFill.amount -= cartTank.fill(fluidToFill, doFill);
 					if (fluidToFill.amount <= 0) {

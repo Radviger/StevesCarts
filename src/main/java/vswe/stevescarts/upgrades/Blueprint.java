@@ -11,6 +11,7 @@ import vswe.stevescarts.modules.data.ModuleData;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Blueprint extends SimpleInventoryEffect {
 	public Blueprint() {
@@ -27,7 +28,7 @@ public class Blueprint extends SimpleInventoryEffect {
 		return Localization.UPGRADES.BLUEPRINT.translate();
 	}
 
-	public boolean isValidForBluePrint(final TileEntityUpgrade upgrade, final ArrayList<ModuleData> modules, final ModuleData module) {
+	public boolean isValidForBluePrint(final TileEntityUpgrade upgrade, final List<ModuleData> modules, final ModuleData module) {
 		@Nonnull
 		ItemStack blueprint = upgrade.getStackInSlot(0);
 		if (blueprint.isEmpty()) {
@@ -42,7 +43,7 @@ public class Blueprint extends SimpleInventoryEffect {
 			return false;
 		}
 		final byte[] IDs = moduleIDTag.getByteArray();
-		final ArrayList<ModuleData> missing = new ArrayList<>();
+		final List<ModuleData> missing = new ArrayList<>();
 		for (final byte id : IDs) {
 			final ModuleData blueprintModule = ModuleData.getList().get(id);
 			final int index = modules.indexOf(blueprintModule);

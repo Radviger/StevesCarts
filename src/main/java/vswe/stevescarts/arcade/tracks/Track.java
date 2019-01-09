@@ -6,7 +6,7 @@ import vswe.stevescarts.guis.GuiMinecart;
 import vswe.stevescarts.handlers.SoundHandler;
 import vswe.stevescarts.modules.realtimers.ModuleArcade;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class Track {
 	private int x;
@@ -95,7 +95,7 @@ public class Track {
 	public void drawOverlay(final ModuleArcade module, final GuiMinecart gui, final int x, final int y, final boolean isRunning) {
 	}
 
-	public static void addTrack(final ArrayList<Track> tracks, final int x1, final int y1, final int x2, final int y2) {
+	public static void addTrack(final List<Track> tracks, final int x1, final int y1, final int x2, final int y2) {
 		if (x1 != x2 && y1 != y2) {
 			final TrackOrientation corner = getCorner(x1 >= x2, y1 < y2);
 			int x2h;
@@ -134,7 +134,7 @@ public class Track {
 		}
 	}
 
-	private static void addHorizontalTrack(final ArrayList<Track> tracks, int x1, int x2, final int y) {
+	private static void addHorizontalTrack(final List<Track> tracks, int x1, int x2, final int y) {
 		if (x1 > x2) {
 			final int temp = x1;
 			x1 = x2;
@@ -145,7 +145,7 @@ public class Track {
 		}
 	}
 
-	private static void addVerticalTrack(final ArrayList<Track> tracks, final int x, int y1, int y2) {
+	private static void addVerticalTrack(final List<Track> tracks, final int x, int y1, int y2) {
 		if (y1 > y2) {
 			final int temp = y1;
 			y1 = y2;

@@ -2,13 +2,20 @@ package vswe.stevescarts.modules.workers;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRailBase;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.BlockSnapshot;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.ForgeEventFactory;
+import net.minecraftforge.event.world.BlockEvent;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.containers.slots.SlotBuilder;
 import vswe.stevescarts.entitys.EntityMinecartModular;
@@ -17,6 +24,7 @@ import vswe.stevescarts.helpers.Localization;
 import vswe.stevescarts.modules.ISuppliesModule;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ModuleRailer extends ModuleWorker implements ISuppliesModule {
 	private boolean hasGeneratedAngles;
@@ -49,27 +57,32 @@ public class ModuleRailer extends ModuleWorker implements ISuppliesModule {
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		World world = getCart().world;
 		BlockPos next = getNextblock();
 		int x = next.getX();
 		int y = next.getY();
 		int z = next.getZ();
-		final ArrayList<Integer[]> pos = getValidRailPositions(x, y, z);
+		final List<BlockPos> positions = getValidRailPositions(x, y, z);
 		if (doPreWork()) {
 			boolean valid = false;
-			for (int i = 0; i < pos.size(); ++i) {
-				if (tryPlaceTrack(pos.get(i)[0], pos.get(i)[1], pos.get(i)[2], false)) {
-					valid = true;
-					break;
+			loop:
+			for (BlockPos po : positions) {
+				WorkResult r = tryPlaceTrack(po, true);
+				switch (r) {
+					case SUCCESS:
+						valid = true;
+						break loop;
+					case FAILURE:
+						return r;
 				}
 			}
 			if (valid) {
 				startWorking(12);
 			} else {
 				boolean front = false;
-				for (int j = 0; j < pos.size(); ++j) {
-					if (BlockRailBase.isRailBlock(world, new BlockPos(pos.get(j)[0], pos.get(j)[1], pos.get(j)[2]))) {
+				for (BlockPos po : positions) {
+					if (BlockRailBase.isRailBlock(world, po)) {
 						front = true;
 						break;
 					}
@@ -78,49 +91,73 @@ public class ModuleRailer extends ModuleWorker implements ISuppliesModule {
 					turnback();
 				}
 			}
-			return true;
+			return WorkResult.SUCCESS;
 		}
 		stopWorking();
-		for (int k = 0; k < pos.size() && !tryPlaceTrack(pos.get(k)[0], pos.get(k)[1], pos.get(k)[2], true); ++k) {}
-		return false;
+		for (BlockPos p : positions) {
+			WorkResult r = tryPlaceTrack(p, false);
+			if (r == WorkResult.SUCCESS) {
+				break;
+			} else if (r == WorkResult.FAILURE) {
+				return r;
+			}
+		}
+		return WorkResult.SKIP;
 	}
 
-	protected ArrayList<Integer[]> getValidRailPositions(int x, int y, int z) {
-		ArrayList<Integer[]> lst = new ArrayList<>();
+	protected List<BlockPos> getValidRailPositions(int x, int y, int z) {
+		List<BlockPos> lst = new ArrayList<>();
 		if (y >= getCart().y()) {
-			lst.add(new Integer[] { x, y + 1, z });
+			lst.add(new BlockPos(x, y + 1, z));
 		}
-		lst.add(new Integer[] { x, y, z });
-		lst.add(new Integer[] { x, y - 1, z });
+		lst.add(new BlockPos(x, y, z));
+		lst.add(new BlockPos(x, y - 1, z));
 		return lst;
 	}
 
-	protected boolean validRail(Item item) {
+	protected static boolean isRail(Item item) {
 		return Block.getBlockFromItem(item) instanceof BlockRailBase;
 	}
 
-	private boolean tryPlaceTrack(int i, int j, int k, boolean flag) {
-		if (isValidForTrack(new BlockPos(i, j, k), true)) {
+	private WorkResult tryPlaceTrack(BlockPos pos, boolean simulate) {
+		if (isValidForTrack(pos, true)) {
+			EntityMinecartModular cart = getCart();
+			FakePlayer player = getCartOwner();
+			World world = cart.world;
 			for (int l = 0; l < getInventorySize(); ++l) {
-				if (!getStack(l).isEmpty() && validRail(getStack(l).getItem())) {
-					if (flag) {
-						getCart().world.setBlockState(new BlockPos(i, j, k), Block.getBlockFromItem(getStack(l).getItem()).getStateFromMeta(getStack(l).getItemDamage()));
-						if (!getCart().hasCreativeSupplies()) {
-							ItemStack stack = getStack(l);
-							stack.shrink(1);
-							if (getStack(l).getCount() == 0) {
-								setStack(l, ItemStack.EMPTY);
+				ItemStack stack = getStack(l);
+				Block block = Block.getBlockFromItem(stack.getItem());
+				if (!stack.isEmpty() && isRail(stack.getItem())) {
+					if (!simulate) {
+						player.setHeldItem(EnumHand.MAIN_HAND, stack);
+						player.capabilities.isCreativeMode = cart.hasCreativeSupplies();
+						IBlockState state = block.getStateForPlacement(world, pos, EnumFacing.UP, 0, 0, 0, 0, player, EnumHand.MAIN_HAND);
+						BlockSnapshot snapshot = new BlockSnapshot(player.world, pos, state);
+						BlockEvent.PlaceEvent e = ForgeEventFactory.onPlayerBlockPlace(player, snapshot, EnumFacing.UP, EnumHand.MAIN_HAND);
+						player.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);
+						if (!e.isCanceled()) {
+							world.setBlockState(pos, state);
+							world.playEvent(2001, pos, Block.getStateId(state));
+							if (!player.capabilities.isCreativeMode) {
+								stack.shrink(1);
+								if (stack.getCount() == 0) {
+									setStack(l, ItemStack.EMPTY);
+								}
+								cart.markDirty();
+							} else {
+								player.capabilities.isCreativeMode = false;
 							}
-							getCart().markDirty();
+						} else {
+							return WorkResult.FAILURE;
 						}
 					}
-					return true;
+					return WorkResult.SUCCESS;
 				}
 			}
 			turnback();
-			return true;
+			return WorkResult.SUCCESS;
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
 	@Override
@@ -146,7 +183,7 @@ public class ModuleRailer extends ModuleWorker implements ISuppliesModule {
 		}
 		byte valid = 0;
 		for (int i = 0; i < getInventorySize(); ++i) {
-			if (!getStack(i).isEmpty() && validRail(getStack(i).getItem())) {
+			if (!getStack(i).isEmpty() && isRail(getStack(i).getItem())) {
 				++valid;
 			}
 		}
@@ -180,7 +217,7 @@ public class ModuleRailer extends ModuleWorker implements ISuppliesModule {
 	public boolean haveSupplies() {
 		for (int i = 0; i < getInventorySize(); ++i) {
 			ItemStack item = getStack(i);
-			if (!item.isEmpty() && validRail(item.getItem())) {
+			if (!item.isEmpty() && isRail(item.getItem())) {
 				return true;
 			}
 		}

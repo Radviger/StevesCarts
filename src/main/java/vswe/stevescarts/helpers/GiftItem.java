@@ -10,6 +10,7 @@ import vswe.stevescarts.modules.data.ModuleData;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class GiftItem {
@@ -47,7 +48,7 @@ public class GiftItem {
 		addModuleGifts(GiftItem.EasterList = new ArrayList<>());
 	}
 
-	public static void addModuleGifts(final ArrayList<GiftItem> gifts) {
+	public static void addModuleGifts(final List<GiftItem> gifts) {
 		for (final ModuleData module : ModuleData.getList().values()) {
 			if (!module.getIsLocked() && module.getIsValid() && module.getCost() > 0) {
 				final GiftItem item = new GiftItem(new ItemStack(ModItems.MODULES, 1, module.getID()), module.getCost() * 20, (int) Math.pow(151 - module.getCost(), 2.0));
@@ -57,12 +58,12 @@ public class GiftItem {
 		}
 	}
 
-	public static ArrayList<ItemStack> generateItems(final Random rand, final ArrayList<GiftItem> gifts, int value, final int maxTries) {
+	public static List<ItemStack> generateItems(final Random rand, final List<GiftItem> gifts, int value, final int maxTries) {
 		int totalChanceWeight = 0;
 		for (final GiftItem gift : gifts) {
 			totalChanceWeight += gift.chanceWeight;
 		}
-		final ArrayList<ItemStack> items = new ArrayList<>();
+		final List<ItemStack> items = new ArrayList<>();
 		if (totalChanceWeight == 0) {
 			return items;
 		}

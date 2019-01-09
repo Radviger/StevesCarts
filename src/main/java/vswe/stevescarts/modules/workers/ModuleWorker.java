@@ -21,7 +21,7 @@ public abstract class ModuleWorker extends ModuleBase {
 
 	public abstract byte getWorkPriority();
 
-	public abstract boolean work();
+	public abstract WorkResult work();
 
 	public void startWorking(final int time) {
 		getCart().setWorkingTime(time);
@@ -108,5 +108,11 @@ public abstract class ModuleWorker extends ModuleBase {
 			result = !isLiquid;
 		}
 		return result;
+	}
+
+	public enum WorkResult {
+		SUCCESS,
+		FAILURE,
+		SKIP
 	}
 }

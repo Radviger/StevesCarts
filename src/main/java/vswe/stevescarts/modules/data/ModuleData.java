@@ -64,23 +64,23 @@ public class ModuleData {
 	private String name;
 	private int modularCost;
 	private int groupID;
-	private ArrayList<SIDE> renderingSides;
+	private List<SIDE> renderingSides;
 	private boolean allowDuplicate;
-	private ArrayList<ModuleData> nemesis;
-	private ArrayList<ModuleDataGroup> requirement;
+	private List<ModuleData> nemesis;
+	private List<ModuleDataGroup> requirement;
 	private ModuleData parent;
 	private boolean isLocked;
 	private boolean defaultLock;
-	private ArrayList<Localization.MODULE_INFO> message;
-	private HashMap<String, ModelCartbase> models;
-	private HashMap<String, ModelCartbase> modelsPlaceholder;
-	private ArrayList<String> removedModels;
+	private List<Localization.MODULE_INFO> message;
+	private Map<String, ModelCartbase> models;
+	private Map<String, ModelCartbase> modelsPlaceholder;
+	private List<String> removedModels;
 	private float modelMult;
 	private boolean useExtraData;
 	private byte extraDataDefaultValue;
 	private static final int MAX_MESSAGE_ROW_LENGTH = 30;
 
-	public static HashMap<Byte, ModuleData> getList() {
+	public static Map<Byte, ModuleData> getList() {
 		return ModuleData.moduleList;
 	}
 
@@ -344,7 +344,7 @@ public class ModuleData {
 		ModuleData.moduleList.get((byte) 25).removeModel("Top").addModel("Chair", new ModelSeat());
 		ModuleData.moduleList.get((byte) 26).addModel("Lever", new ModelLever(ResourceHelper.getResource("/models/leverModel.png")));
 		ModuleData.moduleList.get((byte) 27).addModel("Lever", new ModelLever(ResourceHelper.getResource("/models/leverModel2.png"))).addModel("Wheel", new ModelWheel());
-		final ArrayList<Integer> pipes = new ArrayList<>();
+		final List<Integer> pipes = new ArrayList<>();
 		for (int i = 0; i < 9; ++i) {
 			if (i != 4) {
 				pipes.add(i);
@@ -460,13 +460,13 @@ public class ModuleData {
 		return extraDataDefaultValue;
 	}
 
-	public ArrayList<SIDE> getRenderingSides() {
+	public List<SIDE> getRenderingSides() {
 		return renderingSides;
 	}
 
 	protected ModuleData addSides(final SIDE[] sides) {
-		for (int i = 0; i < sides.length; ++i) {
-			addSide(sides[i]);
+		for (SIDE side : sides) {
+			addSide(side);
 		}
 		return this;
 	}
@@ -534,7 +534,7 @@ public class ModuleData {
 		return this;
 	}
 
-	public HashMap<String, ModelCartbase> getModels(final boolean placeholder) {
+	public Map<String, ModelCartbase> getModels(final boolean placeholder) {
 		if (placeholder) {
 			return modelsPlaceholder;
 		}
@@ -558,7 +558,7 @@ public class ModuleData {
 		return this;
 	}
 
-	public ArrayList<String> getRemovedModels() {
+	public List<String> getRemovedModels() {
 		return removedModels;
 	}
 
@@ -586,11 +586,11 @@ public class ModuleData {
 		return parent;
 	}
 
-	protected ArrayList<ModuleData> getNemesis() {
+	protected List<ModuleData> getNemesis() {
 		return nemesis;
 	}
 
-	protected ArrayList<ModuleDataGroup> getRequirement() {
+	protected List<ModuleDataGroup> getRequirement() {
 		return requirement;
 	}
 
@@ -703,7 +703,7 @@ public class ModuleData {
 		return false;
 	}
 
-	public static boolean isValidModuleCombo(final ModuleDataHull hull, final ArrayList<ModuleData> modules) {
+	public static boolean isValidModuleCombo(final ModuleDataHull hull, final List<ModuleData> modules) {
 		final int[] max = { 1, hull.getEngineMax(), 1, 4, hull.getAddonMax(), 6 };
 		final int[] current = new int[max.length];
 		for (final ModuleData module : modules) {
@@ -714,9 +714,8 @@ public class ModuleData {
 					break;
 				}
 			}
-			final int[] array = current;
 			final int n = id;
-			++array[n];
+			++current[n];
 			if (current[id] > max[id]) {
 				return false;
 			}
@@ -810,7 +809,7 @@ public class ModuleData {
 		addExtraMessage(list);
 	}
 
-	public static String checkForErrors(final ModuleDataHull hull, final ArrayList<ModuleData> modules) {
+	public static String checkForErrors(final ModuleDataHull hull, final List<ModuleData> modules) {
 		if (getTotalCost(modules) > hull.getCapacity()) {
 			return Localization.MODULE_INFO.CAPACITY_ERROR.translate();
 		}
@@ -875,7 +874,7 @@ public class ModuleData {
 		return null;
 	}
 
-	public static int getTotalCost(final ArrayList<ModuleData> modules) {
+	public static int getTotalCost(final List<ModuleData> modules) {
 		int currentCost = 0;
 		for (final ModuleData module : modules) {
 			currentCost += module.getCost();
@@ -885,7 +884,7 @@ public class ModuleData {
 
 	private static long calculateCombinations() {
 		long combinations = 0L;
-		final ArrayList<ModuleData> potential = new ArrayList<>();
+		final List<ModuleData> potential = new ArrayList<>();
 		for (final ModuleData module : ModuleData.moduleList.values()) {
 			if (!(module instanceof ModuleDataHull)) {
 				potential.add(module);
@@ -893,15 +892,15 @@ public class ModuleData {
 		}
 		for (final ModuleData module : ModuleData.moduleList.values()) {
 			if (module instanceof ModuleDataHull) {
-				final ArrayList<ModuleData> modules = new ArrayList<>();
-				combinations += populateHull((ModuleDataHull) module, modules, (ArrayList<ModuleData>) potential.clone(), 0);
+				final List<ModuleData> modules = new ArrayList<>();
+				combinations += populateHull((ModuleDataHull) module, modules, new ArrayList<>(potential), 0);
 				System.out.println("Hull added: " + combinations);
 			}
 		}
 		return combinations;
 	}
 
-	private static long populateHull(final ModuleDataHull hull, final ArrayList<ModuleData> attached, final ArrayList<ModuleData> potential, final int depth) {
+	private static long populateHull(final ModuleDataHull hull, final List<ModuleData> attached, final List<ModuleData> potential, final int depth) {
 		if (checkForErrors(hull, attached) != null) {
 			return 0L;
 		}
@@ -909,9 +908,9 @@ public class ModuleData {
 		final Iterator itt = potential.iterator();
 		while (itt.hasNext()) {
 			final ModuleData module = (ModuleData) itt.next();
-			final ArrayList<ModuleData> attachedCopy = (ArrayList<ModuleData>) attached.clone();
+			final List<ModuleData> attachedCopy = new ArrayList<>(attached);
 			attachedCopy.add(module);
-			final ArrayList<ModuleData> potentialCopy = (ArrayList<ModuleData>) potential.clone();
+			final List<ModuleData> potentialCopy = new ArrayList<>(potential);
 			itt.remove();
 			combinations += populateHull(hull, attachedCopy, potentialCopy, depth + 1);
 			if (depth < 3) {

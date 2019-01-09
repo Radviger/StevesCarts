@@ -7,15 +7,16 @@ import vswe.stevescarts.items.ItemCarts;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.List;
 
 public abstract class CartVersion {
-	private static ArrayList<CartVersion> versions;
+	private static List<CartVersion> versions = new ArrayList<>();
 
 	public CartVersion() {
 		CartVersion.versions.add(this);
 	}
 
-	public abstract void update(final ArrayList<Byte> p0);
+	public abstract void update(final List<Byte> p0);
 
 	public static byte[] updateCart(final EntityMinecartModular cart, byte[] data) {
 		if (cart.cartVersion != getCurrentVersion()) {
@@ -26,7 +27,7 @@ public abstract class CartVersion {
 	}
 
 	private static byte[] updateArray(byte[] data, int version) {
-		final ArrayList<Byte> modules = new ArrayList<>();
+		final List<Byte> modules = new ArrayList<>();
 		for (final byte b : data) {
 			modules.add(b);
 		}
@@ -40,9 +41,7 @@ public abstract class CartVersion {
 		return data;
 	}
 
-	public static void updateItemStack(
-		@Nonnull
-			ItemStack item) {
+	public static void updateItemStack(@Nonnull ItemStack item) {
 		if (!item.isEmpty() && item.getItem() instanceof ItemCarts) {
 			final NBTTagCompound info = item.getTagCompound();
 			if (info != null) {
@@ -55,9 +54,7 @@ public abstract class CartVersion {
 		}
 	}
 
-	public static void addVersion(
-		@Nonnull
-			ItemStack item) {
+	public static void addVersion(@Nonnull ItemStack item) {
 		if (!item.isEmpty() && item.getItem() instanceof ItemCarts) {
 			final NBTTagCompound info = item.getTagCompound();
 			if (info != null) {
@@ -75,10 +72,9 @@ public abstract class CartVersion {
 	}
 
 	static {
-		CartVersion.versions = new ArrayList<>();
 		new CartVersion() {
 			@Override
-			public void update(final ArrayList<Byte> modules) {
+			public void update(final List<Byte> modules) {
 				final int index = modules.indexOf((byte) 17);
 				if (index != -1) {
 					modules.set(index, (byte) 16);
@@ -90,7 +86,7 @@ public abstract class CartVersion {
 		};
 		new CartVersion() {
 			@Override
-			public void update(final ArrayList<Byte> modules) {
+			public void update(final List<Byte> modules) {
 			}
 		};
 	}

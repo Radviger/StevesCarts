@@ -1,5 +1,6 @@
 package vswe.stevescarts.entitys;
 
+import com.mojang.authlib.GameProfile;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.block.BlockRailBase;
 import net.minecraft.block.BlockRailBase.EnumRailDirection;
@@ -21,6 +22,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
@@ -58,25 +60,20 @@ import vswe.stevescarts.modules.data.ModuleData;
 import vswe.stevescarts.modules.engines.ModuleEngine;
 import vswe.stevescarts.modules.storages.chests.ModuleChest;
 import vswe.stevescarts.modules.storages.tanks.ModuleTank;
-import vswe.stevescarts.modules.workers.CompWorkModule;
 import vswe.stevescarts.modules.workers.ModuleWorker;
 import vswe.stevescarts.modules.workers.tools.ModuleTool;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 public class EntityMinecartModular extends EntityMinecart implements IInventory, IEntityAdditionalSpawnData, IFluidHandler {
 
 	public BlockPos disabledPos;
 	protected boolean wasDisabled;
-	public double pushX;
-	public double pushZ;
-	public double temppushX;
-	public double temppushZ;
+	public double pushX, pushZ;
+	public double temppushX, temppushZ;
 	protected boolean engineFlag;
 	private int motorRotation;
 	public boolean cornerFlip;
@@ -87,8 +84,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	private int wrongRender;
 	private boolean oldRender;
 	private float lastRenderYaw;
-	private double lastMotionX;
-	private double lastMotionZ;
+	private double lastMotionX, lastMotionZ;
 	private int workingTime;
 	private ModuleWorker workingComponent;
 	public TileEntityCartAssembler placeholderAsssembler;
@@ -98,15 +94,16 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	public static final int MODULAR_SPACE_HEIGHT = 168;
 	public int modularSpaceHeight;
 	public boolean canScrollModules;
-	private ArrayList<ModuleCountPair> moduleCounts;
+	private List<ModuleCountPair> moduleCounts;
 	public static final int[][][] railDirectionCoordinates;
-	private ArrayList<ModuleBase> modules;
-	private ArrayList<ModuleWorker> workModules;
-	private ArrayList<ModuleEngine> engineModules;
-	private ArrayList<ModuleTank> tankModules;
+	private List<ModuleBase> modules;
+	private List<ModuleWorker> workModules;
+	private List<ModuleEngine> engineModules;
+	private List<ModuleTank> tankModules;
 	private ModuleCreativeSupplies creativeSupplies;
 	public Random rand;
 	protected String name;
+	private GameProfile owner;
 	public byte cartVersion;
 	private int scrollY;
 	@SideOnly(Side.CLIENT)
@@ -119,7 +116,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	private static final DataParameter<Boolean> IS_BURNING = EntityDataManager.createKey(EntityMinecartModular.class, DataSerializers.BOOLEAN);
 	private static final DataParameter<Boolean> IS_DISANABLED = EntityDataManager.createKey(EntityMinecartModular.class, DataSerializers.BOOLEAN);
 
-	public ArrayList<ModuleBase> getModules() {
+	public List<ModuleBase> getModules() {
 		return modules;
 	}
 
@@ -132,23 +129,23 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 		return false;
 	}
 
-	public ArrayList<ModuleWorker> getWorkers() {
+	public List<ModuleWorker> getWorkers() {
 		return workModules;
 	}
 
-	public ArrayList<ModuleEngine> getEngines() {
+	public List<ModuleEngine> getEngines() {
 		return engineModules;
 	}
 
-	public ArrayList<ModuleTank> getTanks() {
+	public List<ModuleTank> getTanks() {
 		return tankModules;
 	}
 
-	public ArrayList<ModuleCountPair> getModuleCounts() {
+	public List<ModuleCountPair> getModuleCounts() {
 		return moduleCounts;
 	}
 
-	public EntityMinecartModular(final World world, final double x, final double y, final double z, final NBTTagCompound info, final String name) {
+	public EntityMinecartModular(final World world, final double x, final double y, final double z, final NBTTagCompound info, final String name, GameProfile owner) {
 		super(world, x, y, z);
 		engineFlag = false;
 		fixedRailDirection = null;
@@ -156,6 +153,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 		cartVersion = info.getByte("CartVersion");
 		loadModules(info);
 		this.name = name;
+		this.owner = owner;
 		for (int i = 0; i < modules.size(); ++i) {
 			if (modules.get(i).hasExtraData() && info.hasKey("Data" + i)) {
 				modules.get(i).setExtraData(info.getByte("Data" + i));
@@ -185,22 +183,22 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 			modules = new ArrayList<>();
 			doLoadModules(data);
 		} else {
-			final ArrayList<Byte> modulesToAdd = new ArrayList<>();
-			final ArrayList<Byte> oldModules = new ArrayList<>();
-			for (int i = 0; i < moduleLoadingData.length; ++i) {
-				oldModules.add(moduleLoadingData[i]);
+			final List<Byte> modulesToAdd = new ArrayList<>();
+			final List<Byte> oldModules = new ArrayList<>();
+			for (byte m : moduleLoadingData) {
+				oldModules.add(m);
 			}
-			for (int i = 0; i < data.length; ++i) {
+			for (byte m : data) {
 				boolean found = false;
 				for (int j = 0; j < oldModules.size(); ++j) {
-					if (data[i] == oldModules.get(j)) {
+					if (m == oldModules.get(j)) {
 						found = true;
 						oldModules.remove(j);
 						break;
 					}
 				}
 				if (!found) {
-					modulesToAdd.add(data[i]);
+					modulesToAdd.add(m);
 				}
 			}
 			for (final byte id : oldModules) {
@@ -222,10 +220,10 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	}
 
 	private void loadModules(final NBTTagCompound info) {
-		final NBTTagByteArray moduleIDTag = (NBTTagByteArray) info.getTag("Modules");
-		if (moduleIDTag == null) {
+		if (!info.hasKey("Modules")) {
 			return;
 		}
+		final NBTTagByteArray moduleIDTag = (NBTTagByteArray) info.getTag("Modules");
 		if (world.isRemote) {
 			moduleLoadingData = moduleIDTag.getByteArray();
 		} else {
@@ -308,10 +306,9 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 				creativeSupplies = (ModuleCreativeSupplies) module2;
 			}
 		}
-		final CompWorkModule sorter = new CompWorkModule();
-		workModules.sort(sorter);
+		workModules.sort(Comparator.comparingInt(ModuleWorker::getWorkPriority)); //FIXME (REVERSE ORDER?)
 		if (!isPlaceholder) {
-			final ArrayList<GuiAllocationHelper> lines = new ArrayList<>();
+			final List<GuiAllocationHelper> lines = new ArrayList<>();
 			int slots = 0;
 			for (final ModuleBase module3 : modules) {
 				if (module3.hasGui()) {
@@ -319,8 +316,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 					for (final GuiAllocationHelper line : lines) {
 						if (line.width + module3.guiWidth() <= MODULAR_SPACE_WIDTH) {
 							module3.setX(line.width);
-							final GuiAllocationHelper guiAllocationHelper = line;
-							guiAllocationHelper.width += module3.guiWidth();
+							line.width += module3.guiWidth();
 							line.maxHeight = Math.max(line.maxHeight, module3.guiHeight());
 							line.modules.add(module3);
 							foundLine = true;
@@ -443,7 +439,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 			}
 		}
 		final int consumption = getConsumption(true);
-		final ArrayList<ModuleEngine> priority = new ArrayList<>();
+		final List<ModuleEngine> priority = new ArrayList<>();
 		int mostImportant = -1;
 		for (final ModuleEngine engine : engineModules) {
 			if (engine.hasFuel(consumption) && (mostImportant == -1 || mostImportant >= engine.getPriority())) {
@@ -916,41 +912,49 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	}
 
 	@Override
-	public NBTTagCompound writeToNBT(final NBTTagCompound tagCompound) {
-		super.writeToNBT(tagCompound);
-		tagCompound.setString("cartName", name);
-		tagCompound.setDouble("pushX", pushX);
-		tagCompound.setDouble("pushZ", pushZ);
-		tagCompound.setDouble("temppushX", temppushX);
-		tagCompound.setDouble("temppushZ", temppushZ);
-		tagCompound.setShort("workingTime", (short) workingTime);
-		tagCompound.setByteArray("Modules", moduleLoadingData);
-		tagCompound.setByte("CartVersion", cartVersion);
+	public NBTTagCompound writeToNBT(final NBTTagCompound compound) {
+		super.writeToNBT(compound);
+		compound.setString("cartName", name);
+		compound.setDouble("pushX", pushX);
+		compound.setDouble("pushZ", pushZ);
+		compound.setDouble("temppushX", temppushX);
+		compound.setDouble("temppushZ", temppushZ);
+		compound.setShort("workingTime", (short) workingTime);
+		compound.setByteArray("Modules", moduleLoadingData);
+		compound.setByte("CartVersion", cartVersion);
+		if (this.owner != null) {
+			NBTTagCompound owner = new NBTTagCompound();
+			NBTUtil.writeGameProfile(owner, this.owner);
+			compound.setTag("Owner", owner);
+		}
 		if (modules != null) {
 			for (int i = 0; i < modules.size(); ++i) {
 				final ModuleBase module = modules.get(i);
-				module.writeToNBT(tagCompound, i);
+				module.writeToNBT(compound, i);
 			}
 		}
-		return tagCompound;
+		return compound;
 	}
 
 	@Override
-	public void readFromNBT(final NBTTagCompound tagCompound) {
-		super.readFromNBT(tagCompound);
-		name = tagCompound.getString("cartName");
-		pushX = tagCompound.getDouble("pushX");
-		pushZ = tagCompound.getDouble("pushZ");
-		temppushX = tagCompound.getDouble("temppushX");
-		temppushZ = tagCompound.getDouble("temppushZ");
-		workingTime = tagCompound.getShort("workingTime");
-		cartVersion = tagCompound.getByte("CartVersion");
+	public void readFromNBT(final NBTTagCompound compound) {
+		super.readFromNBT(compound);
+		name = compound.getString("cartName");
+		pushX = compound.getDouble("pushX");
+		pushZ = compound.getDouble("pushZ");
+		temppushX = compound.getDouble("temppushX");
+		temppushZ = compound.getDouble("temppushZ");
+		workingTime = compound.getShort("workingTime");
+		cartVersion = compound.getByte("CartVersion");
+		if (compound.hasKey("Owner")) {
+			owner = NBTUtil.readGameProfileFromNBT(compound.getCompoundTag("Owner"));
+		}
 		final int oldVersion = cartVersion;
-		loadModules(tagCompound);
+		loadModules(compound);
 		if (modules != null) {
 			for (int i = 0; i < modules.size(); ++i) {
 				final ModuleBase module = modules.get(i);
-				module.readFromNBT(tagCompound, i);
+				module.readFromNBT(compound, i);
 			}
 		}
 		if (oldVersion < 2) {
@@ -964,10 +968,8 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 				slotCount += module2.getInventorySize();
 			}
 			if (newSlot != -1) {
-				@Nonnull
 				ItemStack lastitem = ItemStack.EMPTY;
 				for (int j = newSlot; j < getSizeInventory(); ++j) {
-					@Nonnull
 					ItemStack thisitem = getStackInSlot(j);
 					setInventorySlotContents(j, lastitem);
 					lastitem = thisitem;
@@ -1046,19 +1048,17 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	}
 
 	@Override
-	public EnumActionResult applyPlayerInteraction(EntityPlayer entityplayer,
-	                                               Vec3d vec,
-	                                               EnumHand hand) {
-		if (MinecraftForge.EVENT_BUS.post(new MinecartInteractEvent(this, entityplayer, hand))) {
+	public EnumActionResult applyPlayerInteraction(EntityPlayer player, Vec3d vec, EnumHand hand) {
+		if (MinecraftForge.EVENT_BUS.post(new MinecartInteractEvent(this, player, hand))) {
 			return EnumActionResult.SUCCESS;
 		}
 		if (isPlaceholder) {
 			return EnumActionResult.FAIL;
 		}
-		if (modules != null && !entityplayer.isSneaking()) {
+		if (modules != null && !player.isSneaking()) {
 			boolean interupt = false;
 			for (final ModuleBase module : modules) {
-				if (module.onInteractFirst(entityplayer)) {
+				if (module.onInteractFirst(player)) {
 					interupt = true;
 				}
 			}
@@ -1067,16 +1067,16 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 			}
 		}
 		if (!world.isRemote) {
-			if (!isDisabled() && !isPassenger(entityplayer)) {
-				temppushX = posX - entityplayer.posX;
-				temppushZ = posZ - entityplayer.posZ;
+			if (!isDisabled() && !isPassenger(player)) {
+				temppushX = posX - player.posX;
+				temppushZ = posZ - player.posZ;
 			}
 			if (!isDisabled() && hasFuel() && pushX == 0.0 && pushZ == 0.0) {
 				pushX = temppushX;
 				pushZ = temppushZ;
 			}
-			FMLNetworkHandler.openGui(entityplayer, StevesCarts.instance, 0, world, getEntityId(), 0, 0);
-			openInventory(entityplayer);
+			FMLNetworkHandler.openGui(player, StevesCarts.instance, 0, world, getEntityId(), 0, 0);
+			openInventory(player);
 		}
 		return EnumActionResult.SUCCESS;
 	}
@@ -1100,7 +1100,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 			cartTicket = ticket;
 		Set<ChunkPos> loadedChunks = ticket.getChunkList();
 
-		ArrayList<ChunkPos> newChunks = new ArrayList<>();
+		List<ChunkPos> newChunks = new ArrayList<>();
 		for (int i = -1; i <= 1; ++i)
 			for (int j = -1; j <= 1; ++j)
 				newChunks.add(new ChunkPos(chunkX + i, chunkZ + j));
@@ -1160,18 +1160,18 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 			if (workingTime <= 0) {
 				final ModuleWorker oldComponent = workingComponent;
 				if (workingComponent != null) {
-					final boolean result = workingComponent.work();
+					final ModuleWorker.WorkResult result = workingComponent.work();
 					if (workingComponent != null && oldComponent == workingComponent && workingTime <= 0 && !workingComponent.preventAutoShutdown()) {
 						workingComponent.stopWorking();
 					}
-					if (result) {
+					if (result == ModuleWorker.WorkResult.SUCCESS) {
 						work();
 						return;
 					}
 				}
 				if (workModules != null) {
 					for (final ModuleWorker module : workModules) {
-						if (module.work()) {
+						if (module.work() == ModuleWorker.WorkResult.SUCCESS) {
 							return;
 						}
 					}
@@ -1185,19 +1185,19 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	public void handleActivator(final ActivatorOption option, final boolean isOrange) {
 		for (final ModuleBase module : modules) {
 			if (module instanceof IActivatorModule && option.getModule().isAssignableFrom(module.getClass())) {
-				final IActivatorModule iactivator = (IActivatorModule) module;
+				final IActivatorModule activator = (IActivatorModule) module;
 				if (option.shouldActivate(isOrange)) {
-					iactivator.doActivate(option.getId());
+					activator.doActivate(option.getId());
 				} else if (option.shouldDeactivate(isOrange)) {
-					iactivator.doDeActivate(option.getId());
+					activator.doDeActivate(option.getId());
 				} else {
 					if (!option.shouldToggle()) {
 						continue;
 					}
-					if (iactivator.isActive(option.getId())) {
-						iactivator.doDeActivate(option.getId());
+					if (activator.isActive(option.getId())) {
+						activator.doDeActivate(option.getId());
 					} else {
-						iactivator.doActivate(option.getId());
+						activator.doActivate(option.getId());
 					}
 				}
 			}
@@ -1222,8 +1222,8 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 		return true;
 	}
 
-	public ArrayList<String> getLabel() {
-		final ArrayList<String> label = new ArrayList<>();
+	public List<String> getLabel() {
+		final List<String> label = new ArrayList<>();
 		if (getModules() != null) {
 			for (final ModuleBase module : getModules()) {
 				module.addToLabel(label);
@@ -1374,7 +1374,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	@SideOnly(Side.CLIENT)
 	private void generateModels() {
 		if (modules != null) {
-			final ArrayList<String> invalid = new ArrayList<>();
+			final List<String> invalid = new ArrayList<>();
 			for (final ModuleBase module : modules) {
 				final ModuleData data = module.getData();
 				if (data.haveRemovedModels()) {
@@ -1387,7 +1387,7 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 				final ModuleBase module = modules.get(i);
 				final ModuleData data = module.getData();
 				if (data != null && data.haveModels(isPlaceholder)) {
-					final ArrayList<ModelCartbase> models = new ArrayList<>();
+					final List<ModelCartbase> models = new ArrayList<>();
 					for (final String str : data.getModels(isPlaceholder).keySet()) {
 						if (!invalid.contains(str)) {
 							models.add(data.getModels(isPlaceholder).get(str));
@@ -1673,5 +1673,9 @@ public class EntityMinecartModular extends EntityMinecart implements IInventory,
 	public int getNextDataWatcher() {
 		base++;
 		return getDataManager().getAll().size() + base + 1;
+	}
+
+	public GameProfile getOwner() {
+		return this.owner;
 	}
 }

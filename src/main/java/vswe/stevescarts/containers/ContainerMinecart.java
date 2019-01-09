@@ -14,8 +14,8 @@ import vswe.stevescarts.containers.slots.SlotFake;
 import vswe.stevescarts.entitys.EntityMinecartModular;
 import vswe.stevescarts.modules.ModuleBase;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class ContainerMinecart extends ContainerBase {
 	private IInventory player;
@@ -42,7 +42,7 @@ public class ContainerMinecart extends ContainerBase {
 		if (cart.getModules() != null) {
 			for (final ModuleBase module : cart.getModules()) {
 				if (module.hasSlots()) {
-					final ArrayList<SlotBase> slotsList = module.getSlots();
+					final List<SlotBase> slotsList = module.getSlots();
 					for (final SlotBase slot : slotsList) {
 						slot.xPos = slot.getX() + module.getX() + 1;
 						slot.yPos = slot.getY() + module.getY() + 1;

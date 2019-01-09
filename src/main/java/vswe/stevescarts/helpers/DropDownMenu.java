@@ -5,7 +5,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import vswe.stevescarts.guis.GuiDetector;
 import vswe.stevescarts.modules.data.ModuleData;
 
-import java.util.ArrayList;
+import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class DropDownMenu {
@@ -22,7 +22,7 @@ public class DropDownMenu {
 		moduleScroll = 0;
 	}
 
-	public static void update(final GuiDetector gui, final int x, final int y, final ArrayList<DropDownMenu> menus) {
+	public static void update(final GuiDetector gui, final int x, final int y, final List<DropDownMenu> menus) {
 		if (gui.currentObject == null) {
 			for (final DropDownMenu menu : menus) {
 				if (gui.inRect(x, y, menu.getHeaderRect())) {

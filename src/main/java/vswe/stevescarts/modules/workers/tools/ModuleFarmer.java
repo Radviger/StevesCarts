@@ -4,13 +4,22 @@ import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.init.Blocks;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
+import net.minecraft.util.NonNullList;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.common.IPlantable;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.world.BlockEvent;
 import vswe.stevescarts.api.farms.ICropModule;
 import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.containers.slots.SlotSeed;
@@ -23,7 +32,6 @@ import vswe.stevescarts.plugins.APIHelper;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.List;
 
 public abstract class ModuleFarmer extends ModuleTool implements ISuppliesModule {
 	private ArrayList<ICropModule> plantModules;
@@ -87,44 +95,54 @@ public abstract class ModuleFarmer extends ModuleTool implements ISuppliesModule
 	}
 
 	@Override
-	public boolean work() {
+	public WorkResult work() {
 		World world = getCart().world;
 		BlockPos next = getNextblock();
-		for (int i = -getRange(); i <= getRange(); ++i) {
-			for (int j = -getRange(); j <= getRange(); ++j) {
+		int range = getRange();
+		for (int i = -range; i <= range; ++i) {
+			for (int j = -range; j <= range; ++j) {
 				BlockPos coord = next.add(i, -1, j);
-				if (farm(world, coord)) {
-					return true;
+				WorkResult f = farm(world, coord);
+				if (f != WorkResult.SKIP) {
+					return f;
 				}
-				if (till(world, coord)) {
-					return true;
+				WorkResult t = till(world, coord);
+				if (t != WorkResult.SKIP) {
+					return t;
 				}
-				if (plant(world, coord)) {
-					return true;
+				WorkResult p = plant(world, coord);
+				if (p != WorkResult.SKIP) {
+					return p;
 				}
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
-	protected boolean till(World world, BlockPos pos) {
+	protected WorkResult till(World world, BlockPos pos) {
 		Block block = world.getBlockState(pos).getBlock();
 		if (world.isAirBlock(pos.up()) && (block == Blocks.GRASS || block == Blocks.DIRT)) {
 			if (doPreWork()) {
 				startWorking(10);
-				return true;
+				return WorkResult.SUCCESS;
 			}
 			stopWorking();
-			world.setBlockState(pos, Blocks.FARMLAND.getDefaultState());
+			PlayerInteractEvent e = new PlayerInteractEvent.RightClickBlock(getCartOwner(), EnumHand.MAIN_HAND, pos, EnumFacing.UP, Vec3d.ZERO);
+			if (!MinecraftForge.EVENT_BUS.post(e)) {
+				world.playSound(null, pos, SoundEvents.ITEM_HOE_TILL, SoundCategory.BLOCKS, 1F, 1F);
+				world.setBlockState(pos, Blocks.FARMLAND.getDefaultState());
+			} else {
+				return WorkResult.FAILURE;
+			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
-	protected boolean plant(World world, BlockPos pos) {
+	protected WorkResult plant(World world, BlockPos pos) {
 		int hasSeeds = -1;
 		IBlockState soilState = world.getBlockState(pos);
 		Block soilblock = soilState.getBlock();
-		if (soilblock != null) {
+		if (soilblock != Blocks.AIR) {
 			for (int i = 0; i < getInventorySize(); ++i) {
 				if (!getStack(i).isEmpty() && isSeedValidHandler(getStack(i))) {
 					IBlockState cropblock = getCropFromSeedHandler(getStack(i), world, pos);
@@ -137,7 +155,7 @@ public abstract class ModuleFarmer extends ModuleTool implements ISuppliesModule
 			if (hasSeeds != -1) {
 				if (doPreWork()) {
 					startWorking(25);
-					return true;
+					return WorkResult.SUCCESS;
 				}
 				stopWorking();
 				IBlockState cropblock2 = getCropFromSeedHandler(getStack(hasSeeds), world, pos);
@@ -149,53 +167,56 @@ public abstract class ModuleFarmer extends ModuleTool implements ISuppliesModule
 				}
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
-	protected boolean farm(World world, BlockPos pos) {
+	protected WorkResult farm(World world, BlockPos pos) {
 		EntityMinecartModular cart = getCart();
 		if (!isBroken()) {
 			pos = pos.up();
-			IBlockState blockState = world.getBlockState(pos);
-			Block block = blockState.getBlock();
+			IBlockState state = world.getBlockState(pos);
+			Block block = state.getBlock();
 			if (isReadyToHarvestHandler(world, pos)) {
 				if (doPreWork()) {
 					final int efficiency = (enchanter != null) ? enchanter.getEfficiencyLevel() : 0;
 					final int workingtime = (int) (getBaseFarmingTime() / Math.pow(1.2999999523162842, efficiency));
 					setFarming(workingtime * 4);
 					startWorking(workingtime);
-					return true;
+					return WorkResult.SUCCESS;
 				}
 				stopWorking();
-				List<ItemStack> stuff;
-				if (shouldSilkTouch(blockState, pos)) {
-					stuff = new ArrayList<>();
-					@Nonnull
-					ItemStack stack = getSilkTouchedItem(blockState);
-					if (!stack.isEmpty()) {
-						stuff.add(stack);
+				FakePlayer player = getCartOwner();
+				BlockEvent e = new BlockEvent.BreakEvent(world, pos, state, player);
+				if (!MinecraftForge.EVENT_BUS.post(e)) {
+					NonNullList<ItemStack> stuff = NonNullList.create();
+					if (shouldSilkTouch(state, pos)) {
+						ItemStack stack = getSilkTouchedItem(state);
+						if (!stack.isEmpty()) {
+							stuff.add(stack);
+						}
+					} else {
+						final int fortune = (enchanter != null) ? enchanter.getFortuneLevel() : 0;
+						block.getDrops(stuff, world, pos, state, fortune);
 					}
+					for (ItemStack s : stuff) {
+						cart.addItemToChest(s);
+						if (s.getCount() != 0) {
+							final EntityItem item = new EntityItem(world, cart.posX, cart.posY, cart.posZ, s);
+							item.motionX = (pos.getX() - cart.x()) / 10.0f;
+							item.motionY = 0.15000000596046448;
+							item.motionZ = (pos.getZ() - cart.z()) / 10.0f;
+							world.spawnEntity(item);
+						}
+					}
+					world.playEvent(2001, pos, Block.getStateId(state));
+					world.setBlockToAir(pos);
+					damageTool(3);
 				} else {
-					final int fortune = (enchanter != null) ? enchanter.getFortuneLevel() : 0;
-					stuff = block.getDrops(world, pos, blockState, fortune);
+					return WorkResult.FAILURE;
 				}
-				for (
-					@Nonnull
-						ItemStack iStack : stuff) {
-					cart.addItemToChest(iStack);
-					if (iStack.getCount() != 0) {
-						final EntityItem entityitem = new EntityItem(world, cart.posX, cart.posY, cart.posZ, iStack);
-						entityitem.motionX = (pos.getX() - cart.x()) / 10.0f;
-						entityitem.motionY = 0.15000000596046448;
-						entityitem.motionZ = (pos.getZ() - cart.z()) / 10.0f;
-						world.spawnEntity(entityitem);
-					}
-				}
-				world.setBlockToAir(pos);
-				damageTool(3);
 			}
 		}
-		return false;
+		return WorkResult.SKIP;
 	}
 
 	protected int getBaseFarmingTime() {

@@ -2,6 +2,7 @@ package vswe.stevescarts.modules.addons;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
+import vswe.stevescarts.containers.slots.SlotBase;
 import vswe.stevescarts.containers.slots.SlotCartCrafter;
 import vswe.stevescarts.containers.slots.SlotCartCrafterResult;
 import vswe.stevescarts.entitys.EntityMinecartModular;
@@ -9,6 +10,7 @@ import vswe.stevescarts.guis.GuiMinecart;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ModuleCrafter extends ModuleRecipe {
 	private CraftingDummy dummy;
@@ -33,12 +35,11 @@ public class ModuleCrafter extends ModuleRecipe {
 					prepareLists();
 					if (canCraftMoreOfResult(result)) {
 						final NonNullList<ItemStack> originals = NonNullList.create();
-						for (int i = 0; i < allTheSlots.size(); ++i) {
-							@Nonnull
-							ItemStack item = allTheSlots.get(i).getStack();
+						for (SlotBase slot : allTheSlots) {
+							ItemStack item = slot.getStack();
 							originals.add((item.isEmpty()) ? ItemStack.EMPTY : item.copy());
 						}
-						final ArrayList<ItemStack> containers = new ArrayList<>();
+						final List<ItemStack> containers = new ArrayList<>();
 						boolean valid = true;
 						boolean edited = false;
 						for (int j = 0; j < 9; ++j) {
@@ -46,9 +47,8 @@ public class ModuleCrafter extends ModuleRecipe {
 							ItemStack recipe = getStack(j);
 							if (!recipe.isEmpty()) {
 								valid = false;
-								for (int k = 0; k < inputSlots.size(); ++k) {
-									@Nonnull
-									ItemStack item2 = inputSlots.get(k).getStack();
+								for (SlotBase slot : inputSlots) {
+									ItemStack item2 = slot.getStack();
 									if (!item2.isEmpty() && item2.isItemEqual(recipe) && ItemStack.areItemStackTagsEqual(item2, recipe)) {
 										edited = true;
 										if (item2.getItem().hasContainerItem(item2)) {
@@ -58,7 +58,7 @@ public class ModuleCrafter extends ModuleRecipe {
 										ItemStack itemStack = item2;
 										itemStack.shrink(1);
 										if (item2.getCount() <= 0) {
-											inputSlots.get(k).putStack(ItemStack.EMPTY);
+											slot.putStack(ItemStack.EMPTY);
 										}
 										valid = true;
 										break;

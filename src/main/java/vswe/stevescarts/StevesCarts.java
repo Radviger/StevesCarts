@@ -50,9 +50,9 @@ public class StevesCarts {
 	@Mod.Instance(Constants.MOD_ID)
 	public static StevesCarts instance;
 
-	public static CreativeTabSC2 tabsSC2;
-	public static CreativeTabSC2 tabsSC2Components;
-	public static CreativeTabSC2 tabsSC2Blocks;
+	public static CreativeTabSC2 tabsSC2 = new CreativeTabSC2("SC2Modules");
+	public static CreativeTabSC2 tabsSC2Components = new CreativeTabSC2("SC2Items");
+	public static CreativeTabSC2 tabsSC2Blocks = new CreativeTabSC2("SC2Blocks");
 
 	public static SimpleNetworkWrapper NET;
 
@@ -131,12 +131,6 @@ public class StevesCarts {
 		OreDictionary.registerOre("fenceWood", Blocks.ACACIA_FENCE);
 	}
 
-	static {
-		StevesCarts.tabsSC2 = new CreativeTabSC2("SC2Modules");
-		StevesCarts.tabsSC2Components = new CreativeTabSC2("SC2Items");
-		StevesCarts.tabsSC2Blocks = new CreativeTabSC2("SC2Blocks");
-	}
-
 	public static class IsEvent implements IConditionFactory {
 
 		@Override
@@ -158,5 +152,17 @@ public class StevesCarts {
 				return () -> true;
 			return () -> false;
 		}
+	}
+
+	public static boolean hasOreDictKey(ItemStack item, String key) {
+		if (!item.isEmpty()) {
+			int i = OreDictionary.getOreID(key);
+			for (int oreID : OreDictionary.getOreIDs(item)) {
+				if (oreID == i) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

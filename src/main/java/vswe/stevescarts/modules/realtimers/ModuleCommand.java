@@ -23,9 +23,9 @@ public abstract class ModuleCommand extends ModuleBase implements ICommandSender
 
 	@Override
 	public void drawForeground(final GuiMinecart gui) {
-		final List lines = gui.getFontRenderer().listFormattedStringToWidth(command, textbox[2] - 4);
+		final List<String> lines = gui.getFontRenderer().listFormattedStringToWidth(command, textbox[2] - 4);
 		for (int i = 0; i < lines.size(); ++i) {
-			final String line = lines.get(i).toString();
+			final String line = lines.get(i);
 			drawString(gui, line, textbox[0] + 2, textbox[1] + 2 + i * 8, 16777215);
 		}
 	}
@@ -64,12 +64,12 @@ public abstract class ModuleCommand extends ModuleBase implements ICommandSender
 	}
 
 	@Override
-	public boolean canUseCommand(final int var1, final String var2) {
-		return var1 <= 2;
+	public boolean canUseCommand(final int level, final String command) {
+		return level <= 2;
 	}
 
-	public String translateString(final String var1, final Object... var2) {
-		return var1;
+	public String translateString(final String format, final Object... args) {
+		return format;
 	}
 
 	public BlockPos getPlayerCoordinates() {

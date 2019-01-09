@@ -20,7 +20,7 @@ import vswe.stevescarts.helpers.storages.SCTank;
 import vswe.stevescarts.models.ModelCartbase;
 import vswe.stevescarts.modules.ModuleBase;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class RendererCart<T extends EntityMinecartModular> extends Render<T> {
 	public RendererCart(RenderManager renderManager) {
@@ -186,7 +186,7 @@ public class RendererCart<T extends EntityMinecartModular> extends Render<T> {
 	}
 
 	protected void renderLabel(final EntityMinecartModular cart, final double x, final double y, final double z) {
-		final ArrayList<String> labels = cart.getLabel();
+		final List<String> labels = cart.getLabel();
 		if (labels != null && labels.size() > 0) {
 			final float distance = cart.getDistance(renderManager.renderViewEntity);
 			if (distance <= 64.0f) {

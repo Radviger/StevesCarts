@@ -13,7 +13,7 @@ import net.minecraft.world.World;
 import vswe.stevescarts.helpers.GiftItem;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
+import java.util.List;
 
 public class EntityEasterEgg extends EntityEgg {
 	public EntityEasterEgg(final World world) {
@@ -47,7 +47,7 @@ public class EntityEasterEgg extends EntityEgg {
 					world.spawnEntity(entitychicken);
 				}
 			} else {
-				final ArrayList<ItemStack> items = GiftItem.generateItems(rand, GiftItem.EasterList, 25 + rand.nextInt(300), 1);
+				final List<ItemStack> items = GiftItem.generateItems(rand, GiftItem.EasterList, 25 + rand.nextInt(300), 1);
 				for (
 					@Nonnull
 						ItemStack item : items) {

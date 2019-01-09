@@ -35,7 +35,7 @@ public class DefaultTreeModule implements ITreeModule {
 			}
 			if (sapling.getItem() instanceof ItemBlock) {
 				final Block b = Block.getBlockFromItem(sapling.getItem());
-				return b instanceof BlockSapling || (b != null && isStackSapling(new ItemStack(b, 1, 32767)));
+				return b instanceof BlockSapling || isStackSapling(new ItemStack(b, 1, 32767));
 			}
 		}
 		return false;
